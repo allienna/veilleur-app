@@ -2,7 +2,7 @@
 
 **Last updated**: 2026-05-10
 **Status**: Draft (awaiting approval)
-**Author**: Aurélien Allienne (allienne.a@sfeir.com)
+**Author**: Aurélien Allienne ([@allienna](https://github.com/allienna))
 
 ## 1. Overview
 
@@ -14,7 +14,7 @@ The current v1 of Veilleur depends on a local n8n containerised via Colima and a
 **At DevLille (2026-06-11/12) — hard targets:**
 - Pipeline runs autonomously daily for ≥3 weeks pre-talk (production live by 2026-05-20).
 - ≥90% of days produce a publishable article without human intervention.
-- ≥30 articles published on `allienna.github.io/veilleur`; ≥25 shared on LinkedIn (shared/published ratio = a-posteriori quality proxy).
+- ≥30 articles published on `allienna.github.io/veilleur`; ≥25 shared on LinkedIn (shared/published ratio = a posteriori quality proxy).
 - PWA installed and used daily on iPhone + Mac.
 - All `claude-feature-flow` phases (`/prd` → `/merge`) traversed ≥1×, with git history and `specs/` as evidence.
 - ≥1 feature track reserved for live `/specify` or `/implement` demo on stage.
@@ -78,7 +78,7 @@ Cloud Scheduler fires a single cron job daily at 06:00 Europe/Paris (TBD in `/pl
 A Python orchestrator runs nine steps: Gmail pull → Jina scrape → schema validation → context assembly → `claude -p /generate` → output validation → Imagen 4 Fast → GitHub commit → Firestore + web push. Each step writes its state to Firestore for live supervision.
 **Acceptance criteria:**
 - [ ] Each step writes `runs/{runId}/steps/{stepName}` with `status`, `started_at`, `ended_at`, `error?`.
-- [ ] The agentic step invokes `claude -p` with `--permission-mode bypassPermissions` and no `ANTHROPIC_API_KEY` in env.
+- [ ] The agentic step invokes `claude -p` with `--permission-mode bypassPermissions`; `ANTHROPIC_API_KEY` is **absent from env by default** (OAuth-only via `CLAUDE_CODE_OAUTH_TOKEN`). The API-key fallback (§8 `anthropic-api-key-fallback`) is an explicit, manually activated mode, never the default path.
 - [ ] Output validation enforces: Astro frontmatter complete, LinkedIn post ≤3000 chars, image prompt ≤1000 chars, theme in known list or `"other"`.
 - [ ] Validation failure triggers agentic retry (max 2 attempts) with the validation error fed back as input.
 
