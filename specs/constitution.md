@@ -8,8 +8,8 @@ Veilleur-app is a mono-tenant, mono-user automated tech-watch pipeline: a Stripe
 
 ## 2. Non-Negotiable Principles
 
-1. **Single allowed identity.** Only the hardcoded operator email may read or write Firestore, call `trigger-api`, or read the PWA. Defense-in-depth: Firestore Security Rules + trigger-api JWT verification (`email_verified == true`). The PWA client check is UX only, never the security boundary.
-2. **OAuth-only Anthropic auth.** `ANTHROPIC_API_KEY` is **absent from env by default**. The container authenticates via `CLAUDE_CODE_OAUTH_TOKEN`. The API-key fallback exists in Secret Manager but is mounted only by explicit, manually-edited deployment, never automated.
+1. **Single allowed identity.** Only the hardcoded operator email may read or write Firestore documents, call `trigger-api`, or perform any privileged action. The PWA shell is a public static SPA — what is gated is the **data and the actions**, not the bundle download. Defense-in-depth: Firestore Security Rules + trigger-api JWT verification (`email_verified == true`). The PWA client check is UX only, never the security boundary.
+2. **OAuth-by-default Anthropic auth.** `ANTHROPIC_API_KEY` is **absent from env by default**. The container authenticates via `CLAUDE_CODE_OAUTH_TOKEN`. The API-key fallback exists in Secret Manager but is mounted only by explicit, manually-edited deployment, never automated.
 3. **No secrets in source.** All credentials live in GCP Secret Manager and are accessed via SA IAM. Never commit secrets, `.env` files with real values, or service-account JSON keys.
 4. **Transformative use only.** No source paragraph is reproduced wholesale. Direct quotes ≤30 words per source, max 1 per source. Every cited fact attributes its source by name and links to its URL. Paywall content (Jina markers) is excluded. Enforced by deterministic post-validator in `/generate`.
 5. **Hard caps per run.** 50 newsletters fetched, 100 links scraped, 500k input tokens, 30k output tokens, 1 image generated, 10k-word article max, 3000-char LinkedIn post. Exceeding any cap = run failure, not silent truncation.
@@ -26,7 +26,7 @@ Veilleur-app is a mono-tenant, mono-user automated tech-watch pipeline: a Stripe
 |---|---|---|
 | Minion runtime | Cloud Run Job (Python 3.12 + Node 20 + git + `@anthropic-ai/claude-code`) | **Locked** |
 | Orchestrator | Python 3.12 + Pydantic | **Locked** |
-| Agentic step | `claude -p "/generate"` against versioned `.claude/commands/generate.md` | **Locked** |
+| Agentic step | `claude -p "/generate"` from the [`allienna/claude-feature-flow`](https://github.com/allienna/claude-feature-flow) plugin (installed as a versioned dependency of the Minion image) | **Locked** |
 | LLM | Claude Code Max 5× via OAuth; API-key fallback only | **Locked** |
 | Image gen | Vertex AI (`imagen-4.0-fast-generate-001`), IAM-only | **Locked** |
 | Public site | Astro on `allienna.github.io/veilleur` (separate repo) | **Locked** |
@@ -45,7 +45,7 @@ Veilleur-app is a mono-tenant, mono-user automated tech-watch pipeline: a Stripe
 - **Python**: Pydantic models for every Minion I/O boundary (Gmail payloads, Jina output, `/generate` outputs, Firestore docs). `uv` as package manager. `ruff` for lint + format.
 - **TypeScript**: `strict: true`, no `any`, no `// @ts-ignore`. ESLint + Prettier.
 - **Module shape (Minion)**: one file per step under `minion/src/minion/` (`gmail.py`, `jina.py`, `imagen.py`, …). Each step takes a typed input, returns a typed output, writes its Firestore state. No cross-step state in globals.
-- **Slash commands are production code**: `minion/.claude/commands/generate.md` is versioned, reviewed, and changes require a PR — treat it like the orchestrator.
+- **Slash commands are production code**: `/generate` lives in the [`allienna/claude-feature-flow`](https://github.com/allienna/claude-feature-flow) plugin and is shared across projects that use the same Minion blueprint. Changes to it require a PR to that repo; the Minion image installs it as a pinned, versioned dependency — treat the plugin as production code, not a free-floating script.
 - **Firestore access in PWA**: typed accessors only, no inline `doc()` calls inside React components.
 - **Logging**: structured logs only (`runId`, step, level). No `print` / `console.log` in committed code.
 - **Comments**: only when the WHY is non-obvious. Don't restate the code.
