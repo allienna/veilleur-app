@@ -2,7 +2,7 @@
 
 **Track ID**: 001-hello-veilleur-spike
 **Roadmap ref**: F-001
-**Status**: Draft
+**Status**: Approved
 **Created**: 2026-05-19
 **Branch**: feat/001-hello-veilleur-spike
 **PRD sections**: §9 Phase 1 M2, §10 R1 (Claude OAuth in headless container), §10 R9 (first-time IAM chain), §5 Tech Stack, §8 Configuration
@@ -145,8 +145,10 @@ This is a spike. **Hard-fail-fast is preferred over graceful degradation** — t
 
 ## Open Questions
 
-- **OQ-1 (blocking AC-2)**: Which GCP project will host the spike — a fresh `veilleur-app-spike` project (recommended for clean IAM teardown if R1 fails) or the eventual production `veilleur-app` project? Decision needed before `scripts/provision-spike-secrets.sh` runs.
-- **OQ-2 (blocking FR-1)**: Confirm Cloud Run Job region. `europe-west1` (Belgium) is the default for Europe/Paris locality and Vertex AI Imagen availability. Any preference / latency reason to pick `europe-west9` (Paris) or `us-central1` (Imagen sometimes ships features there first)?
-- **OQ-3 (blocking FR-4)**: The GitHub fine-grained PAT scope to `allienna.github.io` requires generating it manually in the GitHub UI before the script runs. Has it been issued yet, or is that part of the spike's setup work?
-- **OQ-4 (informational)**: After F-001 succeeds, does the spike code stay in `minion/spike/` as a regression-probe (recommended — re-runnable any time the auth chain shifts) or get deleted in F-002 for cleanliness? Recommendation: keep it as `minion/src/minion/spike.py` with a `make spike-local` target preserved indefinitely.
-- **OQ-5 (calendar)**: The roadmap flagged an M7 calendar slip. F-001 sizing was M (~1 day); the spike's actual completion time depends heavily on OQ-3 (PAT issuance) and any IAM surprises. If the spike takes >2 days, the M7 → 2026-05-29 re-baseline assumption breaks; decide before starting whether to timebox F-001 (e.g., 1.5 days hard, then escalate).
+> Resolved 2026-05-19 during `/plan`. See `plan.md` for impact.
+
+- **OQ-1 → Resolved**: Host on the **prod `veilleur-app`** GCP project directly. Cleanup of failed-spike artifacts is explicit.
+- **OQ-2 → Resolved**: Cloud Run region **`europe-west1`** (Belgium).
+- **OQ-3 → Resolved (deferred)**: GitHub PAT state unknown. `scripts/provision-spike-secrets.sh` will refuse to proceed unless `github-pat-allienna-pages` has a version, printing the issuance URL and `gcloud secrets versions add` command.
+- **OQ-4 → Resolved**: Keep `spike.py` indefinitely at `minion/src/minion/spike.py` as a regression probe.
+- **OQ-5 → Resolved**: **1.5-day hard timebox**. If AC-5 (R1 close-out) not green by EOD +1.5, escalate before proceeding — accept Anthropic API-key fallback (constitution §2 deviation, requires PR), descope F-005's agentic step, or further M7 slip. Decision logged in `escalation.md` if triggered.
