@@ -8,7 +8,7 @@
 
 ## Phase 1 — Python workspace + structured logging + models
 
-- [ ] **T-1.1**: Initialize `minion/` Python workspace
+- [x] **T-1.1**: Initialize `minion/` Python workspace
   - **Do**: Create `minion/pyproject.toml` declaring Python 3.12, project name `veilleur-minion`, runtime deps (`google-api-python-client`, `google-auth`, `google-genai`, `google-cloud-firestore`, `google-cloud-secret-manager`, `pydantic>=2`, `python-json-logger`, `httpx`, `pillow`, `click`), dev deps (`ruff`, `pyright`), and `[tool.ruff]` + `[tool.pyright]` blocks. Run `uv sync` to materialize `.venv` and produce `minion/uv.lock`. Create `minion/.dockerignore` excluding `.venv`, `__pycache__`, `*.pyc`, `.pytest_cache`, `tests/`.
   - **Test**: `cd minion && uv run python -c "import google.genai, google.cloud.firestore, pydantic, click; print('ok')"` prints `ok`.
 
