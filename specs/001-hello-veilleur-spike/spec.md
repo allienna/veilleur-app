@@ -2,7 +2,7 @@
 
 **Track ID**: 001-hello-veilleur-spike
 **Roadmap ref**: F-001
-**Status**: Approved
+**Status**: In Progress
 **Created**: 2026-05-19
 **Branch**: feat/001-hello-veilleur-spike
 **PRD sections**: §9 Phase 1 M2, §10 R1 (Claude OAuth in headless container), §10 R9 (first-time IAM chain), §5 Tech Stack, §8 Configuration

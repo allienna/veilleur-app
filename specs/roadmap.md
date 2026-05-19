@@ -15,7 +15,7 @@ Decomposes the PRD into vertically-sliced features ordered by dependency. Each f
 **Delivers**: Dockerfile baseline, GCP project + Secret Manager seeded, working Cloud Run Job invocation, confidence that `CLAUDE_CODE_OAUTH_TOKEN` works in headless container.
 **Surfaces**: `minion`
 **Estimated size**: M
-**Status**: Planning
+**Status**: In Progress
 
 ### F-002: Monorepo scaffold + shared types + CLAUDE.md
 **Summary**: Skeleton directories (`pwa/`, `minion/`, `trigger-api/`, `shared/`, `infra/`), JSON Schema source of truth with codegen to TS + Python, root `CLAUDE.md` with workspace build/lint/test commands, allowed-email constant pinned in three locations with CI grep test.
