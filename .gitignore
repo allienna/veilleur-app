@@ -1,0 +1,39 @@
+# Python
+.venv/
+**/.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.ruff_cache/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Secrets & local config — never commit
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Local agent state (Claude Code worktrees, conductor metadata)
+.claude/
+.conductor/
+
+# IDE
+.vscode/
+.idea/
+
+# Build outputs (future workspaces)
+dist/
+build/
+node_modules/
+
+# Lockfiles are explicitly NOT ignored — they must be committed (constitution §6):
+#   minion/uv.lock, pwa/pnpm-lock.yaml, trigger-api/pnpm-lock.yaml

@@ -12,19 +12,19 @@
   - **Do**: Create `minion/pyproject.toml` declaring Python 3.12, project name `veilleur-minion`, runtime deps (`google-api-python-client`, `google-auth`, `google-genai`, `google-cloud-firestore`, `google-cloud-secret-manager`, `pydantic>=2`, `python-json-logger`, `httpx`, `pillow`, `click`), dev deps (`ruff`, `pyright`), and `[tool.ruff]` + `[tool.pyright]` blocks. Run `uv sync` to materialize `.venv` and produce `minion/uv.lock`. Create `minion/.dockerignore` excluding `.venv`, `__pycache__`, `*.pyc`, `.pytest_cache`, `tests/`.
   - **Test**: `cd minion && uv run python -c "import google.genai, google.cloud.firestore, pydantic, click; print('ok')"` prints `ok`.
 
-- [ ] **T-1.2**: Repo-root `.gitignore`
+- [x] **T-1.2**: Repo-root `.gitignore`
   - **Do**: Create `.gitignore` at the repo root with `.venv/`, `__pycache__/`, `*.pyc`, `.pytest_cache/`, `.DS_Store`, `*.log`, `.env`, `.env.local`, `minion/.venv/`, `minion/uv.lock` is **not** ignored (lockfile must be committed per constitution §6).
   - **Test**: `git status --porcelain | grep -E '(\.venv|__pycache__|\.DS_Store)'` returns nothing after creating those paths.
 
-- [ ] **T-1.3**: Spike package skeleton + Click CLI entry
+- [x] **T-1.3**: Spike package skeleton + Click CLI entry
   - **Do**: Create `minion/src/minion/__init__.py` (empty), `minion/src/minion/spike/__init__.py` (empty), and `minion/src/minion/spike/__main__.py` containing a Click group with two stub subcommands `run` (accepts `--date YYYY-MM-DD`, default today) and `claude-probe` (no args), both currently raising `NotImplementedError`. Configure `pyproject.toml` `[tool.hatch.build]` (or equivalent) so `src/` layout works.
   - **Test**: `cd minion && uv run python -m minion.spike --help` lists `run` and `claude-probe`; both subcommands exit non-zero with `NotImplementedError`.
 
-- [ ] **T-1.4**: Structured JSON logger
+- [x] **T-1.4**: Structured JSON logger
   - **Do**: Create `minion/src/minion/spike/logging.py` exporting `get_logger(run_id: str) -> logging.Logger`. Configure root logger once via `python-json-logger.JsonFormatter` with fields `timestamp, level, name, message, run_id, step`. Logger writes to stdout only.
   - **Test**: `cd minion && uv run python -c "from minion.spike.logging import get_logger; g = get_logger('test-123'); g.info('hello', extra={'step': 'init'})"` emits a single JSON line with `run_id=test-123`, `step=init`, `message=hello`.
 
-- [ ] **T-1.5**: `SpikeRunRecord` Pydantic model
+- [x] **T-1.5**: `SpikeRunRecord` Pydantic model
   - **Do**: Create `minion/src/minion/spike/models.py` defining `SpikeRunRecord(BaseModel)` with fields `run_id: str`, `started_at: datetime`, `ended_at: datetime | None`, `gmail_unread_count: int | None`, `imagen_status: Literal["ok", "blocked", "error"]`, `image_bytes_size: int | None`, `github_commit_sha: str | None`. Include a `make_run_id(date: str) -> str` helper producing `spike-{date}-{uuid4().hex[:8]}` per AD-8.
   - **Test**: `cd minion && uv run python -c "from minion.spike.models import SpikeRunRecord, make_run_id; r = SpikeRunRecord(run_id=make_run_id('2026-05-19'), started_at='2026-05-19T08:00:00Z', imagen_status='ok'); print(r.run_id, r.model_dump_json())"` prints a `spike-2026-05-19-<8hex>` runId and a JSON dump with no validation error.
 
