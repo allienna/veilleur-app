@@ -40,10 +40,12 @@
 - **Rationale**: Constitution §3 locks Vertex / Firestore SDKs. Gmail's SDK is the only sensible path. GitHub Contents API is ~30 LOC — pulling `PyGithub` is dead weight for one PUT. `httpx` is reused in F-004 for Jina.
 - **Alternatives considered**: `PyGithub` — yes, less code, but introduces a transitive web of deps for one endpoint. `aiohttp` — rejected; F-001 is sync top-to-bottom and async adds noise.
 
-### AD-7: gcloud scripts now, Terraform later
-- **Choice**: `scripts/provision-spike-secrets.sh` and `scripts/provision-spike-iam.sh` are idempotent bash scripts using `gcloud` + `gh`. Terraform is explicitly **out of scope for F-001** (lands in F-007).
-- **Rationale**: For a spike, bash is faster to iterate on and easier to debug. Idempotency comes from `gcloud secrets create ... || gcloud secrets versions add ...` patterns and `gcloud projects add-iam-policy-binding` being naturally idempotent.
-- **Alternatives considered**: Terraform now — F-001's IAM surface is small (one SA, three secrets, three IAM bindings); Terraform's cost would dominate.
+### AD-7: Terraform from F-001 (revised 2026-05-21)
+- **Choice**: All declarative infrastructure (API enablement, Secret Manager slots, service account, IAM bindings, Artifact Registry repo, Cloud Run Job shape) is in `infra/spike/*.tf` with **local state** (`terraform.tfstate` in the same directory, gitignored). F-007 extends this same module to add Cloud Scheduler + the budget kill-switch and migrates state to a GCS backend.
+- **Rationale**: Originally (pre-2026-05-21) the plan deferred Terraform to F-007 because F-001's surface is small enough for bash. Reversed during /implement after recognizing the DevLille spec-coding narrative is materially stronger when the repo demonstrates IaC from feature 1: an `infra/spike/main.tf` is more legible on stage than a pair of bash scripts. The bash-script cost would have been wasted (everything thrown away in F-007); writing TF once now means F-007 just extends.
+- **Boundary**: Terraform owns *shape*. It does **not** build container images, push to Artifact Registry, populate secret versions, or execute Cloud Run Job invocations — those stay in bash (`scripts/spike-cloud.sh`, `scripts/add-secret-versions.sh`, `scripts/spike-local.sh`). Cloud Run Job's `template.containers.image` uses `lifecycle.ignore_changes` so per-revision image bumps via `gcloud run jobs update` don't drift the TF state.
+- **State**: local file backend for F-001 (`terraform.tfstate` next to `main.tf`, gitignored). F-007 migrates to a GCS backend (`terraform_remote_state` pattern) before any second engineer or CI needs to touch it.
+- **Alternatives considered**: (a) original bash-scripts approach — rejected on the spec-coding narrative argument; (b) remote GCS state from day one — rejected as ceremony cost not justified for the spike; (c) push more of F-007 into F-001 while we're at it — rejected as scope creep on the R1 close-out feature.
 
 ### AD-8: Run ID format
 - **Choice**: `runId = spike-{YYYY-MM-DD}-{shortId}` where `shortId = first 8 chars of uuid4().hex`. Date prefix lets `gcloud logging read` filter by date. The `spike-` prefix isolates F-001 runs from real runs the moment F-003 lands.
@@ -79,11 +81,15 @@
 | `minion/src/minion/spike/firestore.py` | `write_run(record: SpikeRunRecord) -> None`. Writes at `runs/{record.run_id}`. |
 | `minion/src/minion/spike/github.py` | `commit_image(date: str, bytes_: bytes) -> str`. Returns commit SHA. Uses GitHub Contents API directly via `httpx`. |
 | `minion/src/minion/spike/claude_probe.py` | Subprocess `claude -p --permission-mode bypassPermissions "Output the word PONG and nothing else."`; asserts stdout starts with `PONG`. |
-| `scripts/provision-spike-secrets.sh` | Idempotent bash. Creates five secrets in `veilleur-app` project. Refuses to proceed if `gcloud config get-value project` ≠ `veilleur-app`. |
-| `scripts/provision-spike-iam.sh` | Idempotent bash. Creates `spike-minion-sa`, grants three roles (per-secret `secretmanager.secretAccessor`, project `aiplatform.user`, project `datastore.user`). |
+| `infra/spike/main.tf` | Terraform: API enablement (`secretmanager`, `aiplatform`, `firestore`, `run`, `artifactregistry`, `iam`), 5 empty Secret Manager slots, `spike-minion-sa` service account, per-secret IAM bindings (`roles/secretmanager.secretAccessor`) on the 3 actively-used secrets, project IAM (`roles/aiplatform.user`, `roles/datastore.user`), Artifact Registry repo `minion`, Cloud Run Job `spike-minion` shape (image tag managed via lifecycle ignore_changes). |
+| `infra/spike/variables.tf` | Inputs: `project_id` (default `veilleur-app`), `region` (default `europe-west1`). |
+| `infra/spike/outputs.tf` | Outputs: `service_account_email`, `artifact_registry_repo`, `cloud_run_job_name`. |
+| `infra/spike/versions.tf` | Terraform required_version `>= 1.5`, `google` provider pin. |
+| `infra/spike/.gitignore` | Ignore local state (`*.tfstate`, `*.tfstate.backup`, `.terraform/`, `.terraform.lock.hcl` debatable — keep committed for reproducible plugin pins). |
+| `scripts/add-secret-versions.sh` | Idempotent bash. For each of the 3 actively-used secrets (`gmail-oauth-refresh-token`, `anthropic-oauth-token`, `github-pat-allienna-pages`), checks if a version exists; if not, prints the issuance runbook URL + the `gcloud secrets versions add` invocation and exits 1. |
 | `scripts/spike-local.sh` | `make spike-local` equivalent. Runs `docker run --platform linux/amd64 -v ~/.config/gcloud:/root/.config/gcloud ... veilleur-spike:dev run --date $(date +%F)`. |
-| `scripts/spike-cloud.sh` | Builds image, pushes to Artifact Registry (`europe-west1-docker.pkg.dev/veilleur-app/minion/spike:dev-$(git rev-parse --short HEAD)`), creates/updates the Cloud Run Job, executes once, prints the runId. |
-| `minion/README.md` | AC-9 deliverable. Documents human prerequisites in order: `gcloud auth login` → `gcloud config set project veilleur-app` → `claude setup-token` → GitHub PAT issuance UI → run `provision-spike-secrets.sh` → run `provision-spike-iam.sh` → `scripts/spike-local.sh` → `scripts/spike-cloud.sh`. |
+| `scripts/spike-cloud.sh` | Builds image, pushes to Artifact Registry (`europe-west1-docker.pkg.dev/veilleur-app/minion/spike:dev-$(git rev-parse --short HEAD)`), updates the Cloud Run Job image revision via `gcloud run jobs update --image=...` (TF declares the Job; this script just bumps the image tag), executes once, prints the runId. |
+| `minion/README.md` | AC-9 deliverable. Documents human prerequisites in order: `gcloud auth login` (personal account) → `gcloud auth application-default login` → `gcloud config set project veilleur-app` → `claude setup-token` → GitHub PAT issuance UI → `cd infra/spike && terraform init && terraform apply` → `./scripts/add-secret-versions.sh` → `./scripts/spike-local.sh` → `./scripts/spike-cloud.sh`. |
 | `.gitignore` (root) | `.venv/`, `__pycache__/`, `*.pyc`, `.pytest_cache/`, `.DS_Store`, `*.log`, `.env`, `.env.local`. |
 
 ### Modified Files
@@ -124,9 +130,9 @@
 ### Phase 4 — Cloud deployment + R1 close-out (the load-bearing milestone)
 **Goal**: A `gcloud run jobs execute` produces the same Firestore + GitHub artifacts as Phase 3, **and** `claude-probe` returns `PONG` inside the deployed container.
 
-- `scripts/provision-spike-secrets.sh` — implement + dry-run. Real secret values supplied manually outside the script. The script should `gcloud secrets describe` each secret and refuse to overwrite unless `--force` is passed. **Special handling for OQ-3**: the script must print a clear "Issue the GitHub PAT at <URL> and `gcloud secrets versions add github-pat-allienna-pages --data-file=-` before continuing" message if the secret has no version.
-- `scripts/provision-spike-iam.sh` — implement + run. Verify with `gcloud iam service-accounts get-iam-policy spike-minion-sa@veilleur-app.iam.gserviceaccount.com`.
-- `scripts/spike-cloud.sh` — push image to Artifact Registry, create the Cloud Run Job with the right SA, region `europe-west1`, no Scheduler binding. Execute one run.
+- `infra/spike/*.tf` — implement + `terraform init` + `terraform plan` (must show only creates, no destroys/updates if re-applied) + `terraform apply`. Verifies API enablement, 5 secret slots, SA, per-secret IAM, project IAM, Artifact Registry repo, Cloud Run Job shape.
+- `scripts/add-secret-versions.sh` — implement + run. Halts with issuance instructions until the 3 actively-used secrets (`gmail-oauth-refresh-token`, `anthropic-oauth-token`, `github-pat-allienna-pages`) all have versions. Re-runs are no-ops once populated.
+- `scripts/spike-cloud.sh` — push image to Artifact Registry (the repo is now TF-managed), update the Cloud Run Job image revision via `gcloud run jobs update --image=...`. Execute one run.
 - **Run `claude-probe` inside the deployed container first** (the AC-5 / R1 gate). Only if PONG comes back, proceed to the full `run` invocation.
 - Verify AC-2, AC-3, AC-4 by reading Firestore + GitHub commit history.
 - If the 1.5-day timebox is reached without AC-5 green, escalate per OQ-5 resolution. Document the escalation decision in `specs/001-hello-veilleur-spike/escalation.md` (only if it happens).
