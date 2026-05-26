@@ -2,7 +2,7 @@
 
 **Plan**: specs/001-hello-veilleur-spike/plan.md
 **Status**: Ready
-**Total**: 24 tasks across 5 phases (Phase 4 now Terraform-first: T-4.1, T-4.1a, T-4.2, T-4.3, T-4.4, T-4.5, T-4.6)
+**Total**: 24 tasks across 5 phases — all complete (Phase 4 now Terraform-first: T-4.1, T-4.1a, T-4.2, T-4.3, T-4.4, T-4.5, T-4.6)
 
 > No `CLAUDE.md` exists yet (F-002 introduces it). Verification commands use `uv run …` directly. Tests in the formal sense are intentionally absent — the acceptance gate is the live end-to-end run (per plan §Test Strategy). Each task's **Test** is a concrete smoke check, not a unit test.
 
@@ -94,20 +94,20 @@
   - **Do**: Run `gcloud run jobs execute spike-minion --region=europe-west1 --args=claude-probe --wait`. Then `gcloud logging read 'resource.type=cloud_run_job AND resource.labels.job_name=spike-minion' --limit=20 --format=json` and confirm the JSON log line `{"step": "claude_probe", "status": "ok"}` is present. **This is the load-bearing milestone of F-001.** If this fails, trigger the OQ-5 escalation procedure: do not proceed to T-4.5/T-4.6; instead create `specs/001-hello-veilleur-spike/escalation.md` documenting the failure, decide between the three escalation options (API-key fallback, descope F-005 agentic step, M7 slip), and resume only after the decision is made.
   - **Test**: Job execution exits with `status: "Completed"`. Cloud Logging shows the `claude_probe ok` line. Re-running the execution multiple times always succeeds (proves OAuth token stability inside the container, not a one-shot fluke).
 
-- [ ] **T-4.5**: Execute full `run` in deployed container — **AC-2 / AC-3 / AC-4 verification**
+- [x] **T-4.5**: Execute full `run` in deployed container — **AC-2 / AC-3 / AC-4 verification** `[verified 2026-05-26: ~57s, doc spike-2026-05-26-5b88f35e complete, commit 99f57290]`
   - **Do**: Run `gcloud run jobs execute spike-minion --region=europe-west1 --wait` (no args = defaults to `run --date ...`). Verify in Firestore that a `runs/spike-<date>-<8hex>` doc exists with `gmail_unread_count`, `imagen_status`, `image_bytes_size`, `github_commit_sha` all populated. Verify in `https://github.com/allienna/allienna.github.io/commits/main` that a commit at `veilleur/site/public/images/spikes/<date>.webp` exists with the matching SHA.
   - **Test**: All three artifacts present and consistent (Firestore SHA == GitHub SHA). Total Job duration < 5 min (AC-10).
 
-- [ ] **T-4.6**: Run validations — AC-1, AC-6, AC-7, AC-8
+- [x] **T-4.6**: Run validations — AC-1, AC-6, AC-7, AC-8 `[verified 2026-05-26: clean-clone amd64 build OK, ruff T20 clean, TF idempotent, no project-wide secret IAM]`
   - **Do**: (a) AC-1: clean clone in `/tmp`, run `docker build --platform linux/amd64 ...`, confirm success. (b) AC-6: `grep -rn 'print(' minion/src/ scripts/` should return nothing (or only inside log-config code, never as a substitute for logger). (c) AC-7 (idempotency): `cd infra/spike && terraform plan` after a clean apply shows "No changes", and re-running `scripts/add-secret-versions.sh` with all secrets populated exits 0 silently. (d) AC-8 (per-secret IAM, no project-wide secret access): `gcloud projects get-iam-policy veilleur-app --format=json | jq '.bindings[] | select(.members[] | contains("spike-minion-sa")) | .role'` should NOT contain `roles/secretmanager.secretAccessor` at the project level.
   - **Test**: All four assertions pass.
 
 ## Phase 5 — README + finalization
 
-- [ ] **T-5.1**: `minion/README.md` covering the human prerequisites and run sequence
+- [x] **T-5.1**: `minion/README.md` covering the human prerequisites and run sequence `[verified 2026-05-26: no angle-bracket placeholders; full runbook + troubleshooting]`
   - **Do**: Create `minion/README.md` documenting (in order): (1) `gcloud auth login` with the **personal** Google account → `gcloud auth application-default login` (same personal account — see CLI-vs-ADC pitfall noted in session memory) → `gcloud config set project veilleur-app` → `gcloud auth configure-docker europe-west1-docker.pkg.dev`. (2) `claude setup-token` (capture the `CLAUDE_CODE_OAUTH_TOKEN`). (3) Issue the fine-grained GitHub PAT at the documented URL with the required scopes on `allienna/allienna.github.io`. (4) `cd infra/spike && terraform init && terraform apply` (creates APIs, secret slots, SA, IAM, Artifact Registry repo, Cloud Run Job shape). (5) `./scripts/add-secret-versions.sh` — follows the runbook to populate the 3 actively-used secrets. (6) `./scripts/spike-local.sh` (Apple Silicon note: `--platform linux/amd64`). (7) `./scripts/spike-cloud.sh` (builds, pushes, updates Job image). (8) `gcloud run jobs execute spike-minion --region=europe-west1 --args=claude-probe --wait` (R1 close-out gate). (9) `gcloud run jobs execute spike-minion --region=europe-west1 --wait` (full four-step run). Include a "Troubleshooting" subsection covering: the linux/amd64 platform-mismatch error on Apple Silicon, the `ANTHROPIC_API_KEY must be absent` guard, the CLI-vs-ADC identity divergence (personal-vs-Adeo work account), and what to do if `terraform plan` shows drift after `gcloud run jobs update`.
   - **Test**: Read top-to-bottom; every command is copy-pasteable, no placeholders remain. `grep -E '<.*>' minion/README.md` returns no template placeholders.
 
-- [ ] **T-5.2**: AC checklist + status update
+- [x] **T-5.2**: AC checklist + status update `[done 2026-05-26: all 10 ACs ticked]`
   - **Do**: Verify each AC-1 through AC-10 against the artifacts produced in Phases 3 and 4. Update `specs/001-hello-veilleur-spike/spec.md` AC checkboxes to `[x]`. Update `specs/roadmap.md` F-001 status from `Planning` to `In Progress` if a task in this list is still open at this point, or to `Review` (preparing for `/review`) if all 22 tasks here are checked.
   - **Test**: `grep '\[ \]' specs/001-hello-veilleur-spike/spec.md` returns nothing under the Acceptance Criteria section. `grep 'Status:' specs/roadmap.md | grep F-001 -A1` (or equivalent) shows the new status.

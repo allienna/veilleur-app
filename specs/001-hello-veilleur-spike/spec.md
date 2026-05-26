@@ -2,7 +2,7 @@
 
 **Track ID**: 001-hello-veilleur-spike
 **Roadmap ref**: F-001
-**Status**: In Progress
+**Status**: Complete
 **Created**: 2026-05-19
 **Branch**: feat/001-hello-veilleur-spike
 **PRD sections**: §9 Phase 1 M2, §10 R1 (Claude OAuth in headless container), §10 R9 (first-time IAM chain), §5 Tech Stack, §8 Configuration
@@ -30,10 +30,11 @@ Per constitution §2 principle 2, `CLAUDE_CODE_OAUTH_TOKEN` is the default auth 
 ### FR-1: Multi-stage container image
 
 A `minion/Dockerfile` builds a single image with:
-- Python 3.12 (uv-managed venv).
+- Python 3.12 (uv-managed venv at `/opt/venv`, project installed non-editable).
 - Node 20 + `@anthropic-ai/claude-code` installed globally.
 - `git` available on `PATH`.
-- Application code under `/app`.
+- A non-root `minion` user (uid 1000, HOME `/home/minion`) — required because `claude -p
+  --permission-mode bypassPermissions` refuses to run as root.
 - Entrypoint: `python -m minion.spike` (CLI entry, see FR-2).
 
 Image must run on `linux/amd64` (Cloud Run Job constraint) and build reproducibly locally (Apple Silicon → buildx cross-compile).
@@ -85,7 +86,7 @@ Per-secret IAM bindings are mandatory (constitution §6).
 
 ### FR-6: Local↔Cloud Run parity
 
-A `make spike-local` (or `just spike-local` if `just` is added) target that runs the container locally with ADC (`gcloud auth application-default login`) substituting for Workload Identity, against the **same** GCP project and **same** secrets the deployed Job uses. A `make spike-cloud` target deploys the image and runs `gcloud run jobs execute`. Both must produce equivalent Firestore documents (same shape, only `runId` and timestamps differ).
+`./scripts/spike-local.sh` runs the container locally with ADC (`gcloud auth application-default login`) substituting for Workload Identity, against the **same** GCP project and **same** secrets the deployed Job uses. `./scripts/spike-cloud.sh` builds/pushes the image and bumps the Job; `gcloud run jobs execute` runs it. Both must produce equivalent Firestore documents (same shape, only `runId` and timestamps differ).
 
 This parity is the deliverable that closes R9: a passing local run + a passing cloud run, against the same secrets, prove every IAM hop works.
 
@@ -121,16 +122,16 @@ This is a spike. **Hard-fail-fast is preferred over graceful degradation** — t
 
 ## Acceptance Criteria
 
-- [ ] AC-1: `docker build --platform linux/amd64 minion/` succeeds reproducibly from a clean clone on Apple Silicon.
-- [ ] AC-2: `make spike-local` (or equivalent) completes the four-step run end-to-end against the real GCP project, producing one Firestore document at `runs/spike-{date}-{shortId}` with all fields populated.
-- [ ] AC-3: `make spike-cloud` deploys the image to Cloud Run as a Job, executes one invocation, and produces an equivalently-shaped Firestore document.
-- [ ] AC-4: A commit appears on `allienna/veilleur` at `site/public/images/spikes/{date}.webp` from both the local and cloud invocations, with the SHA captured in Firestore.
-- [ ] AC-5: `python -m minion.spike claude-probe` exits 0 inside the deployed container, with `ANTHROPIC_API_KEY` confirmed absent from env. **This is the R1 close-out gate.**
-- [ ] AC-6: No `print()` outside the structured-log boundary in committed code; only JSON lines on stdout (per constitution §4).
-- [ ] AC-7: `terraform apply` in `infra/spike/` is idempotent: a re-run after a clean apply shows "No changes". `scripts/add-secret-versions.sh` is a no-op once all 3 secrets are populated.
-- [ ] AC-8: Terraform grants `spike-minion-sa` `roles/aiplatform.user` + `roles/datastore.user` at the project level and `roles/secretmanager.secretAccessor` per-secret on the 3 active secrets — no project-wide `secretmanager.secretAccessor`.
-- [ ] AC-9: README section in `minion/README.md` documents the human prerequisites (`gcloud auth login`, `claude setup-token`, GitHub PAT creation) and the order to run scripts.
-- [ ] AC-10: Total spike-run duration on Cloud Run is under 5 minutes (well below the 20-min constitution cap, since no Claude generation is in scope).
+- [x] AC-1: `docker build --platform linux/amd64 minion/` succeeds reproducibly from a clean clone on Apple Silicon.
+- [x] AC-2: `./scripts/spike-local.sh` completes the four-step run end-to-end against the real GCP project, producing one Firestore document at `runs/spike-{date}-{shortId}` with all fields populated.
+- [x] AC-3: `./scripts/spike-cloud.sh` + `gcloud run jobs execute` runs the Job in Cloud Run and produces an equivalently-shaped Firestore document.
+- [x] AC-4: A commit appears on `allienna/veilleur-app` (migration-phase target) at `site/public/images/spikes/{date}.webp` from both the local and cloud invocations, with the SHA captured in Firestore.
+- [x] AC-5: `python -m minion.spike claude-probe` exits 0 inside the deployed container, with `ANTHROPIC_API_KEY` confirmed absent from env. **This is the R1 close-out gate.**
+- [x] AC-6: No `print()` outside the structured-log boundary in committed code; only JSON lines on stdout (per constitution §4).
+- [x] AC-7: `terraform apply` in `infra/spike/` is idempotent: a re-run after a clean apply shows "No changes". `scripts/add-secret-versions.sh` is a no-op once all 3 secrets are populated.
+- [x] AC-8: Terraform grants `spike-minion-sa` `roles/aiplatform.user` + `roles/datastore.user` at the project level and `roles/secretmanager.secretAccessor` per-secret on the 3 active secrets — no project-wide `secretmanager.secretAccessor`.
+- [x] AC-9: README section in `minion/README.md` documents the human prerequisites (`gcloud auth login`, `claude setup-token`, GitHub PAT creation) and the order to run scripts.
+- [x] AC-10: Total spike-run duration on Cloud Run is under 5 minutes (well below the 20-min constitution cap, since no Claude generation is in scope).
 
 ## Out of Scope
 
