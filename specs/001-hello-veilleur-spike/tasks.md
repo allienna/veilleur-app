@@ -34,41 +34,41 @@
   - **Do**: Create `minion/src/minion/spike/secrets.py` exporting `get(name: str) -> str` (returns latest version's payload) and `require(name: str)` (raises `MissingSecretError` if absent). On module import, assert `os.environ.get("ANTHROPIC_API_KEY") is None`; raise `RuntimeError` with explicit message if set (constitution §2 principle 2).
   - **Test**: Provision a temp secret `gcloud secrets create spike-test-secret --data-file=- <<< "hello"`, then `cd minion && uv run python -c "from minion.spike.secrets import get; print(get('spike-test-secret'))"` prints `hello`. Then `ANTHROPIC_API_KEY=foo uv run python -c "import minion.spike.secrets"` exits non-zero. Cleanup: `gcloud secrets delete spike-test-secret --quiet`.
 
-- [x] **T-2.2**: Gmail unread-count probe `[deferred-test: needs gmail-oauth-refresh-token from T-4.1]`
+- [x] **T-2.2**: Gmail unread-count probe `[verified 2026-05-26: count_unread_last_24h() = 201]`
   - **Do**: Create `minion/src/minion/spike/gmail.py` exporting `count_unread_last_24h() -> int`. Reads `gmail-oauth-refresh-token` via `secrets.get`, exchanges for an access token, calls `users.messages.list` with `q="is:unread newer_than:1d"` and `maxResults=1` + `resultSizeEstimate` fields. No body fetch. Returns the size estimate.
   - **Test**: `cd minion && uv run python -c "from minion.spike.gmail import count_unread_last_24h; print(count_unread_last_24h())"` prints a non-negative integer. (Requires `gmail-oauth-refresh-token` secret to exist — provisioned in T-4.1.)
 
-- [x] **T-2.3**: Imagen placeholder generator `[deferred-test: needs Vertex AI API + SA grants from T-4.2]`
+- [x] **T-2.3**: Imagen placeholder generator `[verified 2026-05-26: 53KB webp generated]`
   - **Do**: Create `minion/src/minion/spike/imagen.py` defining module-level `SPIKE_IMAGEN_PROMPT` (the mascot prompt per AD-9), and `generate_placeholder() -> bytes`. Uses `google.genai.Client(vertexai=True, project='veilleur-app', location='europe-west1')` with `imagen-4.0-fast-generate-001`, aspect ratio `16:9`, one image. Converts the returned PNG/JPEG to WebP via Pillow. One retry on moderation rejection; if both fail, raise `ImagenBlockedError`.
   - **Test**: `cd minion && uv run python -c "from minion.spike.imagen import generate_placeholder; b = generate_placeholder(); open('/tmp/spike-img.webp','wb').write(b); print(len(b))"` prints a size >5 KB. Visual check: `open /tmp/spike-img.webp` (macOS) shows a navy owl with amber eyes.
 
-- [x] **T-2.4**: Firestore run writer `[deferred-test: needs Firestore Native db + SA grants from T-4.2]`
+- [x] **T-2.4**: Firestore run writer `[verified 2026-05-26: doc written to runs/]`
   - **Do**: Create `minion/src/minion/spike/firestore.py` exporting `write_run(record: SpikeRunRecord) -> None`. Uses `google.cloud.firestore.Client(project='veilleur-app', database='(default)')` to set `runs/{record.run_id}` with `record.model_dump(mode='json')`. Overwrites existing docs (idempotent per AD-8 prep).
   - **Test**: `cd minion && uv run python -c "from minion.spike.firestore import write_run; from minion.spike.models import SpikeRunRecord, make_run_id; from datetime import datetime, timezone; write_run(SpikeRunRecord(run_id=make_run_id('2026-05-19'), started_at=datetime.now(timezone.utc), imagen_status='ok'))"` exits 0. Verify with `gcloud firestore documents read --collection-path=runs --limit=1` showing the new doc.
 
-- [x] **T-2.5**: GitHub Contents API committer `[deferred-test: needs github-pat-allienna-pages from T-4.1 + /tmp/spike-img.webp from T-2.3 live run]`
+- [x] **T-2.5**: GitHub Contents API committer `[verified 2026-05-26: committed to allienna/veilleur-app, SHA c7a340e5]`
   - **Do**: Create `minion/src/minion/spike/github.py` exporting `commit_image(date: str, content: bytes) -> str`. PUTs to `https://api.github.com/repos/allienna/allienna.github.io/contents/veilleur/site/public/images/spikes/{date}.webp` with base64-encoded content, commit message `chore(spike): image probe {date}`, branch `main`. Reads `github-pat-allienna-pages` via `secrets.get`. Handles both create (no `sha`) and update (with prior `sha`) by first GETting the file. Returns the new commit SHA from the response.
   - **Test**: `cd minion && uv run python -c "from minion.spike.github import commit_image; sha = commit_image('2026-05-19', open('/tmp/spike-img.webp','rb').read()); print(sha)"` prints a 40-hex SHA. Verify the commit at `https://github.com/allienna/allienna.github.io/commits/main` and the file at `veilleur/site/public/images/spikes/2026-05-19.webp`.
 
-- [x] **T-2.6**: Claude OAuth subprocess probe `[deferred-test: needs anthropic-oauth-token from T-4.1]`
+- [x] **T-2.6**: Claude OAuth subprocess probe `[verified 2026-05-26: pong() = True locally; deployed-container gate is T-4.4]`
   - **Do**: Create `minion/src/minion/spike/claude_probe.py` exporting `pong() -> bool`. Invokes `subprocess.run(["claude", "-p", "--permission-mode", "bypassPermissions", "Output the word PONG and nothing else."], capture_output=True, text=True, timeout=60, env=...)`. The env must include `CLAUDE_CODE_OAUTH_TOKEN` (from `secrets.get`) and must **not** include `ANTHROPIC_API_KEY`. Asserts `stdout.strip().startswith("PONG")`; returns True/False. On failure logs stderr.
   - **Test**: `cd minion && uv run python -c "from minion.spike.claude_probe import pong; print(pong())"` prints `True` against the operator's host `claude` install. (Deployed-container test happens in T-4.5 — the load-bearing AC-5 gate.)
 
 ## Phase 3 — Orchestration + Dockerfile + local end-to-end
 
-- [ ] **T-3.1**: Wire 4-step `run` orchestration
+- [x] **T-3.1**: Wire 4-step `run` orchestration `[verified 2026-05-26: full run ~7s, Firestore doc complete, committed c5f6e8d9]`
   - **Do**: In `minion/src/minion/spike/__main__.py`, implement the `run` subcommand. Sequentially: (1) `count = gmail.count_unread_last_24h()`, (2) `img = imagen.generate_placeholder()`, (3) `firestore.write_run(record)` (partial), (4) `sha = github.commit_image(date, img)`, then update the same Firestore doc with `ended_at` + `github_commit_sha`. Log one JSON line per step via `get_logger(run_id)` including `step`, `status`, `duration_ms`. Exit non-zero on any step failure (no partial degradation, except for `ImagenBlockedError` which sets `imagen_status="blocked"` and continues).
   - **Test**: `cd minion && uv run python -m minion.spike run --date 2026-05-19` completes in <90s against the real `veilleur-app` project. stdout shows 5 JSON lines (4 step lines + 1 final summary). Firestore has the `runs/spike-2026-05-19-<8hex>` doc with all fields populated.
 
-- [ ] **T-3.2**: Wire `claude-probe` subcommand
+- [x] **T-3.2**: Wire `claude-probe` subcommand `[verified 2026-05-26: exit 0, one JSON line]`
   - **Do**: In `__main__.py`, implement the `claude-probe` subcommand. Calls `claude_probe.pong()` and exits 0 on True, 1 on False. Emits one JSON log line `{"step": "claude_probe", "status": "ok"|"failed"}`.
   - **Test**: `cd minion && uv run python -m minion.spike claude-probe` exits 0 against the operator's host `claude` install.
 
-- [ ] **T-3.3**: Multi-stage `linux/amd64` Dockerfile
+- [x] **T-3.3**: Multi-stage `linux/amd64` Dockerfile `[verified 2026-05-26: amd64 build OK; node 20.20.2, claude 2.1.150, py 3.12.13, git 2.47.3]`
   - **Do**: Create `minion/Dockerfile` per AD-4. Stage 1: `python:3.12-slim` + install `uv` + copy `pyproject.toml` + `uv.lock` + `uv sync --frozen --no-dev` into `/opt/venv`. Stage 2: `python:3.12-slim` base, apt-install `git` + `curl` + `ca-certificates` + Node 20 (via NodeSource setup script), `npm i -g @anthropic-ai/claude-code`, copy `/opt/venv` from stage 1, copy `src/` into `/app`. `WORKDIR /app`. `ENTRYPOINT ["python", "-m", "minion.spike"]`. Header comment documents `--platform linux/amd64` requirement.
   - **Test**: `docker build --platform linux/amd64 -t veilleur-spike:dev minion/` succeeds on Apple Silicon. `docker run --rm --platform linux/amd64 veilleur-spike:dev --help` lists `run` and `claude-probe`.
 
-- [ ] **T-3.4**: Local docker end-to-end verification
+- [x] **T-3.4**: Local docker end-to-end verification `[verified 2026-05-26: container run OK, commit 5e059ea3]`
   - **Do**: Create `scripts/spike-local.sh` that runs `docker run --rm --platform linux/amd64 -v "$HOME/.config/gcloud:/root/.config/gcloud:ro" -e GOOGLE_CLOUD_PROJECT=veilleur-app veilleur-spike:dev run --date "$(date -u +%F)"`. Make it executable. Document in `minion/README.md` placeholder.
   - **Test**: `./scripts/spike-local.sh` produces an equivalent Firestore document + GitHub commit to T-3.1, but originating from the container. The `runId` should be a new one (a fresh `make_run_id` call); only the structural fields need to match.
 

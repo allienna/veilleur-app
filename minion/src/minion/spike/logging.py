@@ -29,6 +29,11 @@ def _configure_root() -> None:
     root.handlers.clear()
     root.addHandler(handler)
     root.setLevel(_stdlogging.INFO)
+
+    # Quiet chatty third-party request loggers so only our step/summary lines show on stdout.
+    for noisy in ("httpx", "httpcore", "google", "urllib3", "google_genai"):
+        _stdlogging.getLogger(noisy).setLevel(_stdlogging.WARNING)
+
     _CONFIGURED = True
 
 
