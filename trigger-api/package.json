@@ -1,0 +1,25 @@
+{
+  "name": "@veilleur/trigger-api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Cloud Run service that verifies a Firebase Auth JWT and invokes the Minion job. Skeleton; JWT logic + job invocation land in F-008.",
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@veilleur/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "@eslint/js": "9.15.0",
+    "@types/node": "22.10.1",
+    "eslint": "9.15.0",
+    "globals": "15.12.0",
+    "prettier": "3.4.1",
+    "typescript": "5.7.2",
+    "typescript-eslint": "8.16.0"
+  }
+}

@@ -1,0 +1,43 @@
+name: deploy-pwa
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "pwa/**"
+      - "shared/**"
+      - ".github/workflows/deploy-pwa.yml"
+  pull_request:
+    paths:
+      - "pwa/**"
+      - "shared/**"
+      - ".github/workflows/deploy-pwa.yml"
+
+jobs:
+  build-pwa:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: "11.3.0"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Lint
+        run: pnpm --filter @veilleur/pwa run lint
+      - name: Typecheck
+        run: pnpm --filter @veilleur/pwa run typecheck
+      - name: Build
+        run: pnpm --filter @veilleur/pwa run build
+
+  deploy:
+    needs: build-pwa
+    runs-on: ubuntu-latest
+    # Guarded: real Firebase Hosting deploy is wired in F-007.
+    if: false
+    steps:
+      - run: echo "Deploy to Firebase Hosting — wired in F-007."

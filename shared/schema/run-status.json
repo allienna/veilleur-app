@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://veilleur.app/schema/run-status.json",
+  "title": "RunStatus",
+  "description": "Terminal and in-flight status tokens for a Minion run. Mirrors DESIGN.md §1 run-status tokens and PRD §6 status verbs. Source of truth for both the PWA (supervision UI) and the Minion (Firestore writes).",
+  "type": "string",
+  "enum": [
+    "success",
+    "success_with_warnings",
+    "failure",
+    "skipped",
+    "aborted",
+    "running"
+  ]
+}

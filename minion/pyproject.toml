@@ -26,11 +26,15 @@ dependencies = [
 [dependency-groups]
 dev = [
     "pyright>=1.1.380",
+    "pytest>=8.3",
     "ruff>=0.6.5",
 ]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/minion"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
 
 [tool.ruff]
 line-length = 100
@@ -57,5 +61,6 @@ ignore = []
 pythonVersion = "3.12"
 typeCheckingMode = "strict"
 include = ["src"]
-exclude = ["**/__pycache__", "**/.venv"]
+# spike/ is throwaway F-001 plumbing slated for deletion; not held to strict typing (F-002 AC-2).
+exclude = ["**/__pycache__", "**/.venv", "src/minion/spike"]
 reportMissingTypeStubs = false  # google SDKs ship incomplete stubs

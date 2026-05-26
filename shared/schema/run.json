@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://veilleur.app/schema/run.json",
+  "title": "Run",
+  "description": "Skeleton shape of a Minion run document and its per-step children. Minimal on purpose — the full model lands in F-003. Source of truth for Firestore docs (Minion) and the supervision listener (PWA).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["runId", "date", "status", "steps"],
+  "properties": {
+    "runId": {
+      "type": "string",
+      "description": "Unique identifier for this run."
+    },
+    "date": {
+      "type": "string",
+      "description": "Run date in YYYY-MM-DD (Europe/Paris). Idempotency key.",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+    },
+    "status": {
+      "$ref": "./run-status.json"
+    },
+    "startedAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO-8601 timestamp when the run began."
+    },
+    "endedAt": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "description": "ISO-8601 timestamp when the run finished; null while running."
+    },
+    "steps": {
+      "type": "array",
+      "description": "Ordered per-step records.",
+      "items": { "$ref": "#/$defs/RunStep" }
+    }
+  },
+  "$defs": {
+    "RunStep": {
+      "type": "object",
+      "title": "RunStep",
+      "additionalProperties": false,
+      "required": ["name", "status"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Step name (e.g. gmail, jina, generate, imagen, github)."
+        },
+        "status": { "$ref": "./run-status.json" },
+        "startedAt": { "type": ["string", "null"], "format": "date-time" },
+        "endedAt": { "type": ["string", "null"], "format": "date-time" },
+        "error": {
+          "type": ["string", "null"],
+          "description": "Error message if the step failed; null otherwise."
+        }
+      }
+    }
+  }
+}
