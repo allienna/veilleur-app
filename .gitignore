@@ -37,3 +37,6 @@ node_modules/
 
 # Lockfiles are explicitly NOT ignored — they must be committed (constitution §6):
 #   minion/uv.lock, pwa/pnpm-lock.yaml, trigger-api/pnpm-lock.yaml
+
+# Transient /qa audit output — regenerate on demand, not versioned
+qa-report.md
