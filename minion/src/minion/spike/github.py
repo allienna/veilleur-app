@@ -1,9 +1,14 @@
 """GitHub Contents API committer for the Hello-Veilleur spike.
 
-Commits one WebP image to `allienna/allienna.github.io` at
-`veilleur/site/public/images/spikes/{date}.webp`. Idempotent by date — replaying for
-the same date overwrites prior content via the GH API's update-with-sha pattern.
-Returns the resulting commit SHA.
+Commits one WebP image to a GitHub repo at `site/public/images/spikes/{date}.webp`.
+Idempotent by date — replaying for the same date overwrites prior content via the GH
+API's update-with-sha pattern. Returns the resulting commit SHA.
+
+MIGRATION-PHASE TARGET (2026-05-26): writes to `allienna/veilleur-app` (this monorepo)
+instead of the real public-site repo, to avoid polluting the live v1 site while v2 is
+being built. The eventual target is `allienna/veilleur` (served at the
+allienna.github.io/veilleur project-page URL) — switching back is a one-word change to
+`REPO_NAME`. PRD §8 mislabeled that repo as `allienna.github.io`; it does not exist.
 
 Uses `httpx` directly against the Contents API rather than `PyGithub` (AD-6): the surface
 is one PUT + one GET, the dep tree stays small, and `httpx` is reused in F-004 for Jina.
@@ -19,9 +24,9 @@ import httpx
 from minion.spike.secrets import require
 
 REPO_OWNER = "allienna"
-REPO_NAME = "allienna.github.io"
+REPO_NAME = "veilleur-app"  # migration-phase override; eventual target is "veilleur"
 BRANCH = "main"
-PATH_TEMPLATE = "veilleur/site/public/images/spikes/{date}.webp"
+PATH_TEMPLATE = "site/public/images/spikes/{date}.webp"
 API_BASE = "https://api.github.com"
 
 _TIMEOUT = httpx.Timeout(30.0)

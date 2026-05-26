@@ -57,7 +57,7 @@
 - **Alternatives considered**: Random / each-run prompt — rejected; adds variance the spike doesn't need.
 
 ### AD-10: GitHub commit path layout matches the real pipeline
-- **Choice**: Commit to `veilleur/site/public/images/spikes/{YYYY-MM-DD}.webp` (note: `spikes/`, not `posts/`). Same parent path as the real F-006 publish target so the layout under `allienna.github.io/veilleur/site/public/images/` is consistent.
+- **Choice**: Commit to the `allienna/veilleur` repo at `site/public/images/spikes/{YYYY-MM-DD}.webp` (note: `spikes/`, not `posts/`). Same parent path as the real F-006 publish target (`site/public/images/posts/`) so the layout is consistent. (PRD §8 mislabeled the repo as `allienna.github.io`; the real repo is `allienna/veilleur`, served at the `allienna.github.io/veilleur` project-page URL. Corrected during T-2.5 verification, 2026-05-22.)
 - **Rationale**: Keeps spike artifacts visible under the same tree but quarantined in their own `spikes/` subdir — never confused for real published images. Idempotent overwrite by date is preserved within the `spikes/` folder.
 
 ## Affected Files
@@ -116,7 +116,7 @@
 - `spike/gmail.py` — `count_unread_last_24h()`. Local smoke test: returns an int ≥ 0.
 - `spike/imagen.py` — `generate_placeholder()`. Local smoke test: returns bytes; manual visual check (open the .webp).
 - `spike/firestore.py` — `write_run(record)`. Local smoke test: read back via `gcloud firestore documents read`.
-- `spike/github.py` — `commit_image(date, bytes_)`. Local smoke test: writes to `allienna.github.io` and the commit shows up in the GitHub UI.
+- `spike/github.py` — `commit_image(date, bytes_)`. Local smoke test: writes to `allienna/veilleur` and the commit shows up in the GitHub UI.
 - `spike/claude_probe.py` — subprocess call. Local smoke test: runs against the operator's host `claude` install (verifies the code is right; the deployed test in Phase 4 is the real R1 gate).
 
 ### Phase 3 — Orchestration + Dockerfile + local invocation (vertical assembly)
@@ -167,4 +167,4 @@ No formal test suite for F-001 — the acceptance gate is **the live end-to-end 
   - **Container platform mismatch** — Apple Silicon dev → linux/amd64 Cloud Run. Mitigation: README + Dockerfile header comment + `make spike-local` always passes `--platform linux/amd64`.
   - **Cost overrun during debugging** — Imagen calls are ~0.02€/each. A debug loop of 50 iterations is ~1€ — acceptable. Vertex idle is zero. Cloud Run Jobs per-second billing while debugging won't dent the 30€/mo cap.
 - **New dependencies**: `google-api-python-client`, `google-genai`, `google-cloud-firestore`, `google-cloud-secret-manager`, `pydantic`, `python-json-logger`, `httpx`, `pillow` (for converting Imagen output to webp if SDK doesn't already do so), `click`. Dev: `ruff`, `pyright`. All standard, all on PyPI, all maintained by Google or the Python ecosystem.
-- **External dependencies needing human action before/during the spike**: gcloud login, GCP project enabled with billing, Vertex AI enabled, Firestore Native created in `europe-west1`, Gmail OAuth refresh token (one-time local OAuth flow), Anthropic `CLAUDE_CODE_OAUTH_TOKEN` from `claude setup-token`, GitHub fine-grained PAT for `allienna/allienna.github.io` (OQ-3).
+- **External dependencies needing human action before/during the spike**: gcloud login, GCP project enabled with billing, Vertex AI enabled, Firestore Native created in `europe-west1`, Gmail OAuth refresh token (one-time local OAuth flow), Anthropic `CLAUDE_CODE_OAUTH_TOKEN` from `claude setup-token`, GitHub fine-grained PAT for `allienna/veilleur` (OQ-3).
