@@ -31,9 +31,11 @@ set both.
    gcloud auth login                          # pick the personal gmail account
    gcloud auth application-default login      # same account — used by the Python SDKs
    gcloud config set project veilleur-app
-   gcloud config set account THE_PERSONAL_GMAIL_ACCOUNT
+   gcloud config set account aurelien.allienne@gmail.com   # the personal account that owns veilleur-app
    gcloud auth configure-docker europe-west1-docker.pkg.dev
    ```
+   The helper scripts default to that account; override with
+   `VEILLEUR_GCLOUD_ACCOUNT=you@example.com` if you fork this for a different operator.
    Verify both identities match:
    ```bash
    gcloud config get-value account
@@ -111,5 +113,5 @@ set both.
   `image`/`client`/`client_version`, which are under `ignore_changes`. Any other drift is
   real; investigate.
 - **gcloud keeps switching back to the Adeo work account** — re-run
-  `gcloud config set account THE_PERSONAL_GMAIL_ACCOUNT`; the helper scripts assert this and
+  `gcloud config set account aurelien.allienne@gmail.com`; the helper scripts assert this and
   fail fast.

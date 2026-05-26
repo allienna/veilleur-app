@@ -53,9 +53,10 @@ def _get_existing_sha(path: str, headers: dict[str, str]) -> str | None:
 
 
 def commit_image(date: str, content: bytes) -> str:
-    """Commit WebP `content` to the date-stamped path on `allienna.github.io@main`.
+    """Commit WebP `content` to the date-stamped path on `{REPO_OWNER}/{REPO_NAME}@{BRANCH}`.
 
-    Returns the new commit SHA. Raises on any non-2xx response from GitHub.
+    During migration that is `allienna/veilleur-app@main`. Returns the new commit SHA;
+    raises on any non-2xx response from GitHub.
     """
     headers = _headers()
     path = PATH_TEMPLATE.format(date=date)

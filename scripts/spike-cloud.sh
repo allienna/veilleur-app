@@ -7,18 +7,25 @@
 # Terraform owns the Job *shape* and ignores image changes, so this script's
 # `gcloud run jobs update --image` doesn't drift TF state.
 #
-# First-time bootstrap order:
-#   1. ./scripts/spike-cloud.sh           # pushes :latest (+ :dev-<sha>); Job not created yet
-#   2. terraform -chdir=infra/spike apply # creates the Job pointing at :latest
-#   3. ./scripts/spike-cloud.sh           # now also bumps the Job to :dev-<sha>
+# First-time bootstrap order (the Artifact Registry repo is created by Terraform, and the
+# Cloud Run Job needs a real image to exist before it can be created):
+#   1. terraform -chdir=infra/spike apply -target=google_artifact_registry_repository.minion
+#   2. ./scripts/spike-cloud.sh           # pushes :latest (+ :dev-<sha>); Job not created yet
+#   3. terraform -chdir=infra/spike apply # creates the Job pointing at :latest
+#   4. ./scripts/spike-cloud.sh           # now also bumps the Job to :dev-<sha>
+# (After bootstrap, a single ./scripts/spike-cloud.sh both pushes and bumps the Job.)
 #
-# Usage: ./scripts/spike-cloud.sh [ARGS]
-#   ARGS overrides the container entrypoint args (default "run"; e.g. "claude-probe").
+# Usage: ./scripts/spike-cloud.sh [SUBCOMMAND]
+#   SUBCOMMAND is a single container entrypoint arg passed to `gcloud run jobs update --args`
+#   (default "run"; the only other value the spike accepts is "claude-probe").
+#
+# The expected gcloud account defaults to the operator's personal account but can be
+# overridden: VEILLEUR_GCLOUD_ACCOUNT=you@example.com ./scripts/spike-cloud.sh
 
 set -euo pipefail
 
 PROJECT_ID="veilleur-app"
-EXPECTED_ACCOUNT="aurelien.allienne@gmail.com"
+EXPECTED_ACCOUNT="${VEILLEUR_GCLOUD_ACCOUNT:-aurelien.allienne@gmail.com}"
 REGION="europe-west1"
 REPO="${REGION}-docker.pkg.dev/${PROJECT_ID}/minion"
 JOB="spike-minion"

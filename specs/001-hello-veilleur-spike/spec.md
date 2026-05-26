@@ -41,11 +41,12 @@ Image must run on `linux/amd64` (Cloud Run Job constraint) and build reproducibl
 
 ### FR-2: `python -m minion.spike` CLI entry
 
-One subcommand: `python -m minion.spike run --date YYYY-MM-DD`. The run performs four steps **sequentially**, each gated by the previous succeeding:
+The CLI has two subcommands: `run` (the four-step chain, below) and `claude-probe` (the R1 gate, FR-3). The primary command `python -m minion.spike run --date YYYY-MM-DD` performs four steps **sequentially**, each gated by the previous succeeding:
 
 1. **Gmail probe** — Fetch the count of unread messages from the dedicated Gmail inbox in the last 24h. Does **not** scrape content, does **not** call Jina. Pure auth probe.
 2. **Imagen probe** — Generate one 16:9 placeholder image of *Le Veilleur* (navy owl, amber eyes, Pixar style) via `imagen-4.0-fast-generate-001` on Vertex AI. Image bytes held in memory.
-3. **Firestore write** — Write a document at `runs/spike-{YYYY-MM-DD}-{shortId}` containing `{started_at, ended_at, gmail_unread_count, imagen_status, image_bytes_size, github_commit_sha?}`. Per constitution §2 principle 9: structured, observable.
+3. **Firestore write** — Write a single document at `runs/spike-{YYYY-MM-DD}-{shortId}` containing `{started_at, ended_at, gmail_unread_count, imagen_status, image_bytes_size, github_commit_sha?}`.
+   - **Observable-steps exemption (constitution §9)**: §9 mandates per-step `runs/{runId}/steps/{stepName}` Firestore docs. The spike deliberately writes only the top-level run doc plus one **structured stdout log line per step** (`step`, `status`, `duration_ms`) — enough to observe a probe run, without the steps subcollection. The full per-step Firestore state machine is F-003's deliverable (roadmap), not the spike's.
 4. **GitHub probe** — Commit the placeholder image at `site/public/images/spikes/{YYYY-MM-DD}.webp` via the Contents API, using the fine-grained PAT scoped to the target repo. Capture the commit SHA back into the Firestore document.
    - **Migration-phase target (2026-05-26)**: writes to `allienna/veilleur-app` (this monorepo) to avoid polluting the live v1 site during v2 build-out. **Eventual target**: `allienna/veilleur` (served at the `allienna.github.io/veilleur` project-page URL — PRD §8 mislabeled it `allienna.github.io`, which doesn't exist). Switching back is a one-word `REPO_NAME` change in `github.py`.
 

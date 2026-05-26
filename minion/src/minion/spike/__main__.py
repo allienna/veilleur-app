@@ -22,7 +22,7 @@ from minion.spike.models import SpikeRunRecord, make_run_id
 
 
 def _today_iso() -> str:
-    return dt.date.today().isoformat()
+    return dt.datetime.now(dt.UTC).date().isoformat()
 
 
 @contextmanager

@@ -8,12 +8,12 @@
 #
 # For each missing secret, prints a runbook block (where to issue / which scopes) and the
 # literal `gcloud secrets versions add` invocation. Exits 1 if any are missing; exits 0
-# (silently) once all 3 have ≥1 version.
+# (printing a one-line confirmation) once all 3 have ≥1 version.
 
 set -euo pipefail
 
 PROJECT_ID="veilleur-app"
-EXPECTED_ACCOUNT="aurelien.allienne@gmail.com"
+EXPECTED_ACCOUNT="${VEILLEUR_GCLOUD_ACCOUNT:-aurelien.allienne@gmail.com}"
 
 # Use --account explicitly to bypass the gcloud "active account flips back to Adeo work"
 # pitfall noted in session memory (gcp-veilleur-app-account, gcloud-cli-vs-adc-identity).
@@ -76,7 +76,8 @@ Issue a fine-grained Personal Access Token at:
 
   - Token name:           veilleur-spike-pages
   - Expiration:           1 year (or whatever rotation cadence you prefer)
-  - Repository access:    Only select repositories -> allienna/veilleur
+  - Repository access:    Only select repositories -> allienna/veilleur-app
+                          (migration-phase target; eventual target is allienna/veilleur)
   - Repository permissions:
       * Contents:   Read and write
       * Metadata:   Read-only (mandatory; selected automatically)
@@ -101,8 +102,8 @@ check_secret() {
   echo "─── MISSING: $name ─────────────────────────────────────────────"
   printf '%s\n' "$runbook"
   echo ""
-  echo "Then add the secret version:"
-  echo "  echo -n '<paste the secret value here>' | gcloud secrets versions add $name --data-file=- --project=$PROJECT_ID"
+  echo "Then add the secret version (note --account, to avoid the work-account pitfall):"
+  echo "  printf %s 'PASTE_THE_SECRET_VALUE' | gcloud secrets versions add $name --data-file=- --project=$PROJECT_ID --account=$EXPECTED_ACCOUNT"
   echo ""
   missing=$((missing + 1))
 }
