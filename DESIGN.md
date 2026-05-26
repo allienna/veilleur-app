@@ -198,7 +198,7 @@ These tempt but are not in the inventory; their absence is intentional:
 
 ### Surface: `astro-site` (external)
 
-We do not own this codebase. We **align tokens only** so a Minion-generated article looks like the same product when opened on the public site vs the PWA. Source of truth lives in the separate Astro repo at [`allienna/allienna.github.io`](https://github.com/allienna/allienna.github.io) under `veilleur/site/tailwind.config.mjs`. If a token diverges here, fix it here and open a follow-up issue against the Astro repo — never the reverse.
+We do not own this codebase. We **align tokens only** so a Minion-generated article looks like the same product when opened on the public site vs the PWA. Source of truth lives in the separate Astro repo at [`allienna/veilleur`](https://github.com/allienna/veilleur) under `site/tailwind.config.mjs` (the site is served at the `allienna.github.io/veilleur` project-page URL). If a token diverges here, fix it here and open a follow-up issue against the Astro repo — never the reverse.
 
 ### Surface: `minion` (logs)
 
@@ -249,12 +249,12 @@ No UI. Structured JSON logs only (`runId`, `step`, `level`). No ANSI color; Clou
 
 ## 6. Mockup References
 
-No mockups in `design/mockups/` at this revision (the directory is committed empty via `.gitkeep`). Visual references currently live in the external Astro repo [`allienna/allienna.github.io`](https://github.com/allienna/allienna.github.io):
+No mockups in `design/mockups/` at this revision (the directory is committed empty via `.gitkeep`). Visual references currently live in the external Astro repo [`allienna/veilleur`](https://github.com/allienna/veilleur) (served at the `allienna.github.io/veilleur` project-page URL):
 
-- [`veilleur/site/src/layouts/BaseLayout.astro`](https://github.com/allienna/allienna.github.io/blob/main/veilleur/site/src/layouts/BaseLayout.astro) — header chrome, mascot pattern, font preconnect, footer pattern.
-- [`veilleur/site/src/components/ArticleCard.astro`](https://github.com/allienna/allienna.github.io/blob/main/veilleur/site/src/components/ArticleCard.astro) — card composition, badge placement, hover transform (replace with `active:scale` on touch).
-- [`veilleur/site/src/components/TagPill.astro`](https://github.com/allienna/allienna.github.io/blob/main/veilleur/site/src/components/TagPill.astro) — theme pill geometry.
-- [`veilleur/site/src/styles/global.css`](https://github.com/allienna/allienna.github.io/blob/main/veilleur/site/src/styles/global.css) — focus ring, prose-veilleur tokens.
+- [`site/src/layouts/BaseLayout.astro`](https://github.com/allienna/veilleur/blob/main/site/src/layouts/BaseLayout.astro) — header chrome, mascot pattern, font preconnect, footer pattern.
+- [`site/src/components/ArticleCard.astro`](https://github.com/allienna/veilleur/blob/main/site/src/components/ArticleCard.astro) — card composition, badge placement, hover transform (replace with `active:scale` on touch).
+- [`site/src/components/TagPill.astro`](https://github.com/allienna/veilleur/blob/main/site/src/components/TagPill.astro) — theme pill geometry.
+- [`site/src/styles/global.css`](https://github.com/allienna/veilleur/blob/main/site/src/styles/global.css) — focus ring, prose-veilleur tokens.
 
 When iPhone mockups exist, drop them in `design/mockups/` (PNG/JPG) and run `/design update mockup-references` to ingest.
 

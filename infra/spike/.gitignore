@@ -1,0 +1,16 @@
+# Terraform working directory (downloaded provider plugins, cached state lock data)
+.terraform/
+
+# Local state — F-001 uses local backend; F-007 migrates to GCS-backed state
+*.tfstate
+*.tfstate.*
+
+# Crash logs
+crash.log
+crash.*.log
+
+# Variable overrides (commit .tfvars.example instead, if needed)
+*.tfvars
+!*.tfvars.example
+
+# Note: .terraform.lock.hcl IS committed (provider plugin pin reproducibility).
