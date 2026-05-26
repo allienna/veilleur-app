@@ -7,3 +7,8 @@ output "artifact_registry_url" {
   description = "Base URL for pushing the Minion image (append /spike:<tag>)."
   value       = "${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.minion.repository_id}"
 }
+
+output "cloud_run_job_name" {
+  description = "Name of the spike Cloud Run Job."
+  value       = google_cloud_run_v2_job.spike_minion.name
+}

@@ -106,3 +106,42 @@ resource "google_artifact_registry_repository" "minion" {
 
   depends_on = [google_project_service.apis]
 }
+
+# ─── Cloud Run Job (the Minion) ──────────────────────────────────────────────────────────
+# TF owns the Job *shape*; the image tag is bumped out-of-band by scripts/spike-cloud.sh
+# (`gcloud run jobs update --image=...`), so `image` is under ignore_changes. The initial
+# image is the `:latest` tag, which spike-cloud.sh must push before the first apply.
+# No Scheduler binding yet — the spike is invoked manually (Scheduler lands in F-007).
+resource "google_cloud_run_v2_job" "spike_minion" {
+  name     = "spike-minion"
+  location = var.region
+
+  template {
+    template {
+      service_account = google_service_account.spike_minion_sa.email
+      max_retries     = 0
+      timeout         = "1200s" # 20-min hard cap, constitution §2 principle 6
+
+      containers {
+        image = "${var.region}-docker.pkg.dev/${var.project_id}/minion/spike:latest"
+        args  = ["run"]
+      }
+    }
+  }
+
+  lifecycle {
+    ignore_changes = [
+      template[0].template[0].containers[0].image,
+      # `gcloud run jobs update` (spike-cloud.sh) stamps these client-metadata fields;
+      # ignore them so out-of-band image bumps don't show as TF drift.
+      client,
+      client_version,
+    ]
+  }
+
+  depends_on = [
+    google_artifact_registry_repository.minion,
+    google_project_iam_member.spike_sa_roles,
+    google_secret_manager_secret_iam_member.spike_sa_accessor,
+  ]
+}

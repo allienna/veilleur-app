@@ -20,8 +20,9 @@ if [[ ! -d "$ADC_DIR" ]]; then
   exit 1
 fi
 
+# The image runs as the non-root 'minion' user (HOME=/home/minion), so ADC mounts there.
 echo ">> docker run $IMAGE run --date $DATE  (ADC mounted read-only)"
 docker run --rm --platform linux/amd64 \
-  -v "$ADC_DIR:/root/.config/gcloud:ro" \
+  -v "$ADC_DIR:/home/minion/.config/gcloud:ro" \
   -e GOOGLE_CLOUD_PROJECT=veilleur-app \
   "$IMAGE" run --date "$DATE"

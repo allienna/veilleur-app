@@ -50,6 +50,11 @@ ENV PATH="/opt/venv/bin:$PATH"
 ENV GRPC_VERBOSITY=ERROR \
     GLOG_minloglevel=2
 
-WORKDIR /app
+# Run as non-root: `claude -p --permission-mode bypassPermissions` refuses to run as
+# root/sudo for security reasons. A dedicated unprivileged user with a writable HOME
+# (for claude's config/state) is required for the agentic step.
+RUN useradd --create-home --uid 1000 minion
+USER minion
+WORKDIR /home/minion
 
 ENTRYPOINT ["python", "-m", "minion.spike"]
