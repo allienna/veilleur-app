@@ -51,4 +51,4 @@ def test_build_pipeline_wires_real_ingestion_steps_and_keeps_order() -> None:
     assert isinstance(by_name[StepName.jina], JinaStep)
     assert isinstance(by_name[StepName.validate_input], ValidateInputStep)
     # The remaining six slots stay stubs (F-005/F-006 replace them).
-    assert not isinstance(by_name[StepName.generate], GmailStep | JinaStep | ValidateInputStep)
+    assert not isinstance(by_name[StepName.generate], (GmailStep, JinaStep, ValidateInputStep))

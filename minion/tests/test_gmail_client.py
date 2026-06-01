@@ -99,6 +99,25 @@ def test_fetch_parses_sender_subject_and_extracts_urls() -> None:
     assert nl.candidate_urls == ["https://techweekly.com/p/post-a"]  # unsubscribe dropped
 
 
+def test_decodes_unpadded_base64url_body() -> None:
+    # Gmail returns base64url without padding; the client must pad before decoding.
+    html = '<a href="https://news.co/article-xyz">Read</a>'
+    unpadded = base64.urlsafe_b64encode(html.encode("utf-8")).rstrip(b"=").decode("ascii")
+    assert len(unpadded) % 4 != 0  # genuinely unpadded
+    msg = {
+        "id": "m1",
+        "internalDate": "1748000000000",
+        "payload": {
+            "mimeType": "text/html",
+            "headers": [{"name": "From", "value": "a@news.co"}, {"name": "Subject", "value": "s"}],
+            "body": {"data": unpadded},
+        },
+    }
+    service, _ = _build_service([msg])
+    [nl] = GmailReaderClient(service=service).fetch_unread("2026-06-01")
+    assert nl.candidate_urls == ["https://news.co/article-xyz"]
+
+
 def test_caps_at_max_newsletters() -> None:
     messages = [
         _message(f"m{i}", f"s{i}@x.com", f"sub {i}", f'<a href="https://x.com/{i}">x</a>', 1)

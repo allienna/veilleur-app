@@ -63,7 +63,10 @@ def _decode_body(payload: dict[str, Any]) -> str:
         mime = part.get("mimeType", "")
         data = part.get("body", {}).get("data")
         if data:
-            decoded = base64.urlsafe_b64decode(data).decode("utf-8", errors="replace")
+            # Gmail returns base64url *without* padding; pad to a multiple of 4 or
+            # urlsafe_b64decode raises binascii.Error: Incorrect padding.
+            padded = data + "=" * (-len(data) % 4)
+            decoded = base64.urlsafe_b64decode(padded).decode("utf-8", errors="replace")
             if mime == "text/html":
                 html_parts.append(decoded)
             elif mime == "text/plain":
