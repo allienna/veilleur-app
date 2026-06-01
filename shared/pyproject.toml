@@ -1,0 +1,21 @@
+# Packaging for the GENERATED Pydantic models so Python consumers (the Minion, and any
+# future Python service) can `import veilleur_shared.*`. This file is hand-written and
+# stable; the package CONTENTS under generated/veilleur_shared/ are codegen output (see
+# scripts/gen-py.mjs) and must never be hand-edited. `shared` is also a pnpm workspace
+# member (package.json) — uv + pnpm coexist here by design (see CLAUDE.md).
+[project]
+name = "veilleur-shared"
+version = "0.0.0"
+description = "Generated Pydantic models for the Veilleur cross-boundary types. Source of truth: shared/schema/*.json."
+requires-python = ">=3.12,<3.13"
+dependencies = ["pydantic>=2.8"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+# The codegen output dir is named `veilleur_shared`, so packaging is a plain prefix
+# removal of `generated/` — which hatchling supports under editable installs (a prefix
+# *rename* via `sources` is not editable-compatible).
+[tool.hatch.build.targets.wheel]
+packages = ["generated/veilleur_shared"]

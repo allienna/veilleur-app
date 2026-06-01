@@ -33,6 +33,7 @@ Decomposes the PRD into vertically-sliced features ordered by dependency. Each f
 **Delivers**: `python -m minion run --date YYYY-MM-DD` works locally; replay overwrites cleanly; concurrent invocation aborts with `aborted: already_running`; structured logs in stdout.
 **Surfaces**: `minion`
 **Estimated size**: L
+**Status**: Complete (reviewed Ready to merge)
 
 ### F-004: Minion ingestion (Gmail + Jina)
 **Summary**: Real implementations of step 1 (Gmail OAuth fetch, 24h window, denylist) and step 2 (Jina Reader scraping up to 100 URLs, paywall detection, ≥50% + ≥5 sources threshold). Schema validation gates the boundary.

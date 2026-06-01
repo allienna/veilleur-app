@@ -21,7 +21,14 @@ dependencies = [
     "pillow>=10.4",
     "pydantic>=2.8",
     "python-json-logger>=2.0",
+    "python-ulid>=2.0",
+    "veilleur-shared",
 ]
+
+[tool.uv.sources]
+# Generated cross-boundary Pydantic models, packaged from shared/generated/veilleur_shared.
+# Editable so `pnpm gen` output is picked up without reinstalling.
+veilleur-shared = { path = "../shared", editable = true }
 
 [dependency-groups]
 dev = [
