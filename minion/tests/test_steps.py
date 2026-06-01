@@ -1,4 +1,4 @@
-"""Tests for the stub step registry."""
+"""Tests for the stub step registry and the real-pipeline factory."""
 
 from __future__ import annotations
 
@@ -6,9 +6,11 @@ from datetime import datetime
 
 from minion.clock import FrozenClock
 from minion.config import PARIS_TZ, STEP_ORDER
+from minion.ingest.fakes import FakeGmailClient, FakeJinaClient
 from minion.logging import bind
 from minion.models import StepName
-from minion.steps import STEPS, StepContext
+from minion.steps import STEPS, StepContext, build_pipeline
+from minion.steps.ingestion import GmailStep, JinaStep, ValidateInputStep
 
 
 def test_steps_are_nine_in_canonical_order() -> None:
@@ -38,3 +40,15 @@ def test_generate_stub_has_article_shape() -> None:
     )
     payload = generate.run(ctx).payload
     assert "article" in payload and "linkedin" in payload and "imagePrompt" in payload
+
+
+def test_build_pipeline_wires_real_ingestion_steps_and_keeps_order() -> None:
+    pipeline = build_pipeline(FakeGmailClient(), FakeJinaClient())
+    assert len(pipeline) == 9
+    assert tuple(s.name for s in pipeline) == STEP_ORDER
+    by_name = {s.name: s for s in pipeline}
+    assert isinstance(by_name[StepName.gmail], GmailStep)
+    assert isinstance(by_name[StepName.jina], JinaStep)
+    assert isinstance(by_name[StepName.validate_input], ValidateInputStep)
+    # The remaining six slots stay stubs (F-005/F-006 replace them).
+    assert not isinstance(by_name[StepName.generate], GmailStep | JinaStep | ValidateInputStep)

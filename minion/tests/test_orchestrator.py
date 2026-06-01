@@ -61,6 +61,42 @@ def test_replay_overwrites_with_fresh_runid_no_orphans(run_store, lock_store, cl
     assert len(stored.steps) == 9  # no duplicate/orphan children from the first attempt
 
 
+@dataclass
+class SkipStep:
+    """A step that ends the run gracefully via terminal_status (AD-3, the no_sources path)."""
+
+    name: StepName = StepName.validate_input
+    status: RunStatus = RunStatus.skipped
+    reason: str = "no_sources"
+
+    def run(self, ctx: StepContext) -> StepResult:
+        return StepResult(terminal_status=self.status, reason=self.reason)
+
+
+def test_step_terminal_status_skips_run_and_halts(run_store, lock_store, clock) -> None:
+    after = RecordingStep(name=StepName.generate)
+    steps = (RecordingStep(name=StepName.gmail), SkipStep(), after)
+    final = run_pipeline(DATE, run_store=run_store, lock_store=lock_store, clock=clock, steps=steps)
+    assert final.status is RunStatus.skipped
+    assert final.error == "no_sources"
+    assert final.endedAt is not None
+    statuses = {s.name: s.status for s in final.steps}
+    assert statuses[StepName.gmail] is RunStatus.success
+    assert statuses[StepName.validate_input] is RunStatus.success  # the step itself succeeded
+    assert StepName.generate not in statuses  # steps after the skip never ran
+    assert after.ran == []
+
+
+def test_terminal_skip_releases_lock(run_store, lock_store, clock) -> None:
+    steps = (SkipStep(),)
+    run_pipeline(DATE, run_store=run_store, lock_store=lock_store, clock=clock, steps=steps)
+    # A subsequent run must be able to acquire the lock (released on graceful exit, AC-6).
+    second = run_pipeline(
+        DATE, run_store=run_store, lock_store=lock_store, clock=clock, steps=steps
+    )
+    assert second.status is RunStatus.skipped
+
+
 def test_step_failure_marks_run_failure_and_halts(run_store, lock_store, clock) -> None:
     after = RecordingStep(name=StepName.generate)
     steps = (RecordingStep(name=StepName.gmail), BoomStep(), after)

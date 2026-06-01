@@ -96,6 +96,17 @@ def run_pipeline(
                 ),
             )
 
+            if result.terminal_status is not None:
+                # Graceful early-exit (AD-3): the step succeeded but ends the run with a
+                # non-failure terminal status (e.g. skipped/no_sources). Halt remaining steps.
+                status = result.terminal_status
+                run_error = result.reason
+                step_log.info(
+                    "run terminated early",
+                    extra={"status": status.value, "reason": result.reason},
+                )
+                break
+
         run_store.finalize_run(date, status, clock.now(), run_error)
         log.info("run finished", extra={"status": status.value})
 

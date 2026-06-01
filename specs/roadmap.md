@@ -42,6 +42,7 @@ Decomposes the PRD into vertically-sliced features ordered by dependency. Each f
 **Delivers**: First half of the daily run reaches "context assembly" with real upstream data; unit tests with mocked APIs cover happy path + degraded thresholds.
 **Surfaces**: `minion`
 **Estimated size**: M
+**Status**: In Progress
 
 ### F-005: Agentic step `/generate` (the talk artefact)
 **Summary**: `claude -p /generate` integration over the versioned `.claude/commands/generate.md` slash command (installed via the `allienna/claude-feature-flow` plugin per constitution §3). Output validation enforces Astro frontmatter, LinkedIn ≤3000 chars, image prompt ≤1000 chars, theme allowlist. Deterministic copyright post-validator (≤30-word quotes, max 1/source, n-gram overlap). Agentic retry on validation failure (max 2).
