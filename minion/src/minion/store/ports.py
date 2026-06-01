@@ -1,0 +1,56 @@
+"""Persistence ports — the only Firestore surface the orchestrator knows about.
+
+Firestore layout (AD-1, AD-2):
+
+    runs/{date}                     run-level document (runId, status, timestamps, error)
+    runs/{date}/steps/{stepName}    one observable child per step (constitution §2.9)
+    locks/{minion}                  the single global concurrency lock
+
+The schema's `Run.steps` array is the *assembled* view: `get_run` merges the run-level
+document with its step subcollection into a schema-valid `Run` (AC-2). Replaying a date
+overwrites the same `runs/{date}` document and clears its step children (AC-4).
+"""
+
+from __future__ import annotations
+
+from datetime import datetime
+from typing import Protocol
+
+from minion.models import Lock, Run, RunStatus, RunStep
+
+
+class RunStore(Protocol):
+    """Reads and writes run documents and their per-step children."""
+
+    def start_run(self, run: Run) -> None:
+        """Overwrite `runs/{run.date}` with the initial running document and clear any
+        existing step children (idempotent replay)."""
+        ...
+
+    def upsert_step(self, date: str, step: RunStep) -> None:
+        """Write/overwrite `runs/{date}/steps/{step.name}`."""
+        ...
+
+    def finalize_run(
+        self, date: str, status: RunStatus, ended_at: datetime, error: str | None
+    ) -> None:
+        """Set the terminal `status`, `endedAt`, and run-level `error` on `runs/{date}`."""
+        ...
+
+    def get_run(self, date: str) -> Run | None:
+        """Assemble the full `Run` (run-level fields + ordered step children), or None."""
+        ...
+
+
+class LockStore(Protocol):
+    """The global single-flight concurrency guard (constitution §2.8)."""
+
+    def acquire(self, lock: Lock) -> bool:
+        """Atomically take the lock. Returns True if acquired — either no lock was held, or
+        the held lock was stale (its `started_at` older than `RUN_TIMEOUT`) and reclaimed.
+        Returns False if a live lock is held by another run."""
+        ...
+
+    def release(self, run_id: str) -> None:
+        """Release the lock iff it is currently held by `run_id` (no-op otherwise)."""
+        ...

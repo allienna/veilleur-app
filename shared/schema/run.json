@@ -2,18 +2,18 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://veilleur.app/schema/run.json",
   "title": "Run",
-  "description": "Skeleton shape of a Minion run document and its per-step children. Minimal on purpose — the full model lands in F-003. Source of truth for Firestore docs (Minion) and the supervision listener (PWA).",
+  "description": "Shape of a Minion run document and its per-step children. The run is keyed in Firestore by `date` (the idempotency key); `runId` is a ULID stored as a field, fresh per attempt (F-003 AD-1). Source of truth for Firestore docs (Minion) and the supervision listener (PWA).",
   "type": "object",
   "additionalProperties": false,
   "required": ["runId", "date", "status", "steps"],
   "properties": {
     "runId": {
       "type": "string",
-      "description": "Unique identifier for this run."
+      "description": "ULID for this run attempt. Disambiguates attempts in logs/history; the Firestore document key is `date`, not this value."
     },
     "date": {
       "type": "string",
-      "description": "Run date in YYYY-MM-DD (Europe/Paris). Idempotency key.",
+      "description": "Run date in YYYY-MM-DD (Europe/Paris). Firestore document key and idempotency key.",
       "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
     },
     "status": {
@@ -29,6 +29,10 @@
       "format": "date-time",
       "description": "ISO-8601 timestamp when the run finished; null while running."
     },
+    "error": {
+      "type": ["string", "null"],
+      "description": "Run-level failure or abort reason (e.g. \"already_running\"); null on success."
+    },
     "steps": {
       "type": "array",
       "description": "Ordered per-step records.",
@@ -36,16 +40,29 @@
     }
   },
   "$defs": {
+    "StepName": {
+      "type": "string",
+      "title": "StepName",
+      "description": "The nine canonical Minion pipeline steps, in execution order.",
+      "enum": [
+        "gmail",
+        "jina",
+        "validate_input",
+        "assemble",
+        "generate",
+        "validate_output",
+        "imagen",
+        "github",
+        "publish"
+      ]
+    },
     "RunStep": {
       "type": "object",
       "title": "RunStep",
       "additionalProperties": false,
       "required": ["name", "status"],
       "properties": {
-        "name": {
-          "type": "string",
-          "description": "Step name (e.g. gmail, jina, generate, imagen, github)."
-        },
+        "name": { "$ref": "#/$defs/StepName" },
         "status": { "$ref": "./run-status.json" },
         "startedAt": { "type": ["string", "null"], "format": "date-time" },
         "endedAt": { "type": ["string", "null"], "format": "date-time" },
