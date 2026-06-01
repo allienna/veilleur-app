@@ -1,0 +1,8 @@
+packages:
+  - "shared"
+  - "pwa"
+  - "trigger-api"
+
+# esbuild ships a prebuilt native binary via a postinstall script; Vite needs it.
+allowBuilds:
+  esbuild: true

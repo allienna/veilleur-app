@@ -24,7 +24,7 @@ Decomposes the PRD into vertically-sliced features ordered by dependency. Each f
 **Delivers**: Compilable empty workspaces; `pnpm`, `uv`, `ruff`, `pyright` configured; CI scaffolding (`build-minion`, `deploy-pwa`, `validate-specs` workflows as stubs); allowed-email invariant enforced in CI.
 **Surfaces**: repo-wide
 **Estimated size**: M
-**Status**: Not started
+**Status**: In Progress
 
 ### F-003: Minion orchestrator core (state machine + Firestore)
 **Summary**: Python 3.12 orchestrator with the 9-step state machine, per-step Firestore writes (`status`, `started_at`, `ended_at`, `error?`), Firestore concurrency lock, idempotent runs by date, Pydantic models for every I/O boundary, structured logging with `runId`. Real steps are stubs returning canned data.

@@ -1,0 +1,20 @@
+{
+  "name": "@veilleur/shared",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Source-of-truth JSON Schemas and generated TS + Pydantic types for the Veilleur boundary.",
+  "type": "module",
+  "exports": {
+    "./run-status": "./generated/ts/run-status.ts",
+    "./run": "./generated/ts/run.ts"
+  },
+  "scripts": {
+    "gen:ts": "node scripts/gen-ts.mjs",
+    "gen:py": "node scripts/gen-py.mjs",
+    "gen": "pnpm run gen:ts && pnpm run gen:py",
+    "check": "pnpm run gen && git diff --exit-code -- generated"
+  },
+  "devDependencies": {
+    "json-schema-to-typescript": "15.0.4"
+  }
+}
