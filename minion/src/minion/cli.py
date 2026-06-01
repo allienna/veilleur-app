@@ -13,9 +13,11 @@ from datetime import datetime
 import click
 
 from minion.clock import Clock, SystemClock
+from minion.ingest.ports import GmailClient, JinaClient
 from minion.logging import configure_logging
 from minion.models import RunStatus
 from minion.orchestrator import run_pipeline
+from minion.steps import build_pipeline
 from minion.store.ports import LockStore, RunStore
 
 _DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
@@ -44,6 +46,14 @@ def build_stores(clock: Clock) -> tuple[RunStore, LockStore]:
     return FirestoreRunStore(client), FirestoreLockStore(client, clock)
 
 
+def build_clients() -> tuple[GmailClient, JinaClient]:
+    """Construct the production ingestion clients (lazy import — Gmail needs the secret)."""
+    from minion.ingest.gmail import GmailReaderClient
+    from minion.ingest.jina import JinaReaderClient
+
+    return GmailReaderClient(), JinaReaderClient()
+
+
 @click.group()
 def cli() -> None:
     """Veilleur Minion — the daily tech-watch pipeline."""
@@ -62,6 +72,10 @@ def run(date: str | None) -> None:
     clock = SystemClock()
     target = date or clock.now().strftime("%Y-%m-%d")
     run_store, lock_store = build_stores(clock)
-    result = run_pipeline(target, run_store=run_store, lock_store=lock_store, clock=clock)
+    gmail_client, jina_client = build_clients()
+    steps = build_pipeline(gmail_client, jina_client)
+    result = run_pipeline(
+        target, run_store=run_store, lock_store=lock_store, clock=clock, steps=steps
+    )
     if result.status is RunStatus.failure:
         raise SystemExit(1)
