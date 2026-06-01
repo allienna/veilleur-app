@@ -1,6 +1,6 @@
 # Packaging for the GENERATED Pydantic models so Python consumers (the Minion, and any
 # future Python service) can `import veilleur_shared.*`. This file is hand-written and
-# stable; the package CONTENTS under generated/python/ are codegen output (see
+# stable; the package CONTENTS under generated/veilleur_shared/ are codegen output (see
 # scripts/gen-py.mjs) and must never be hand-edited. `shared` is also a pnpm workspace
 # member (package.json) — uv + pnpm coexist here by design (see CLAUDE.md).
 [project]

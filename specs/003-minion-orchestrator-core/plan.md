@@ -111,7 +111,7 @@ with Pydantic boundaries and structured logging. No real step logic (F-004+).
 | File | Change |
 |------|--------|
 | `shared/schema/run.json` | Add run-level `error`; add `StepName` enum, type `RunStep.name` to it (AD-5). |
-| `shared/generated/{ts,python}/**` | Regenerated via `pnpm gen` (committed, CI-verified — do not hand-edit). |
+| `shared/generated/{ts,veilleur_shared}/**` | Regenerated via `pnpm gen` (committed, CI-verified — do not hand-edit). |
 | `minion/pyproject.toml` | Add `python-ulid>=2.0` dependency (AD-6). |
 | `minion/src/minion/__init__.py` | Package docstring + minimal public exports (keep import-clean for the smoke test). |
 | `minion/tests/test_smoke.py` | Keep, or fold into the new suites (it asserts the package imports). |

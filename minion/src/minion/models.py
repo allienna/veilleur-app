@@ -33,7 +33,7 @@ ALREADY_RUNNING = "already_running"
 class Lock(BaseModel):
     """The single global concurrency lock document (`locks/minion`).
 
-    A lock is *stale* (and reclaimable) when `startedAt` is older than `RUN_TIMEOUT`
+    A lock is *stale* (and reclaimable) when `started_at` is older than `RUN_TIMEOUT`
     (AD-2) — i.e. the holding run exceeded the constitution §2.6 wall-clock cap and is
     presumed dead.
     """

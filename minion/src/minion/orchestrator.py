@@ -80,7 +80,7 @@ def run_pipeline(
                         error=str(exc),
                     ),
                 )
-                step_log.error("step failed")
+                step_log.exception("step failed")  # emit the traceback for Cloud Logging
                 status = RunStatus.failure
                 run_error = f"{step.name.value}: {exc}"
                 break

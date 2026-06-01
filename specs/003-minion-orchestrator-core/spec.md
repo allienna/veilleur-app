@@ -37,8 +37,9 @@ Pydantic output via `pnpm gen`.
 - As the **operator**, I want a second concurrent invocation to abort immediately
   (`aborted: already_running`) so two pipelines can never race on the same outputs.
 - As the **PWA supervision view** (future F-011 consumer), I want each step to write
-  `runs/{runId}/steps/{stepName}` with `status / started_at / ended_at / error?` so a live
-  listener can render run progress.
+  `runs/{date}/steps/{stepName}` with `status / started_at / ended_at / error?` so a live
+  listener can render run progress. (Per AD-1 the run document is keyed by `date`; `runId`
+  is a ULID field, not the document key.)
 - As a **developer**, I want every cross-boundary value to pass through a Pydantic model
   validated against the shared JSON Schema so a malformed run document fails loudly at the
   boundary, not silently downstream.
@@ -65,11 +66,12 @@ A step that raises sets its own status to `failure` with the error message, mark
 `failure`, and halts the remaining steps (no partial silent continuation).
 
 ### FR-3: Firestore run document + per-step children
-On start, the orchestrator writes a run document at `runs/{runId}` with `runId`, `date`,
-`status=running`, `startedAt`, and an (initially empty / pending) step list. As each step
-executes it writes `runs/{runId}/steps/{stepName}` with `status`, `startedAt`, `endedAt`,
-and `error?` (null on success). On completion the run document's `status` and `endedAt` are
-finalized. Every write conforms to the shared schema (FR-6).
+On start, the orchestrator writes a run document at `runs/{date}` (keyed by date per AD-1;
+`runId` is a ULID field on the doc) with `runId`, `date`, `status=running`, `startedAt`, and
+an (initially empty / pending) step list. As each step executes it writes
+`runs/{date}/steps/{stepName}` with `status`, `startedAt`, `endedAt`, and `error?` (null on
+success). On completion the run document's `status` and `endedAt` are finalized. Every write
+conforms to the shared schema (FR-6).
 
 ### FR-4: Date-keyed idempotency (constitution §2.7)
 Runs are idempotent by `date`. Replaying date `D` overwrites the prior run's document and
@@ -87,7 +89,8 @@ Questions on stale-lock handling).
 ### FR-6: Pydantic boundaries + schema sync (constitution §4)
 Every I/O boundary (the run document, step records, CLI args, step return payloads) is a
 Pydantic model. The run/step models are the generated Pydantic types from
-`shared/generated/python/`, sourced from `shared/schema/run.json`. This feature **expands**
+`shared/generated/veilleur_shared/` (packaged as `veilleur-shared`), sourced from
+`shared/schema/run.json`. This feature **expands**
 `run.json` (and `run-status.json` if needed) to the full live shape and regenerates via
 `pnpm gen`; `pnpm check:codegen` must pass (committed output not drifted).
 
@@ -106,9 +109,9 @@ Question.
 
 | Source API | Method | Path | Purpose |
 |------------|--------|------|---------|
-| Cloud Firestore (Native) | write | `runs/{runId}` | Run document (lifecycle + status). |
-| Cloud Firestore (Native) | write | `runs/{runId}/steps/{stepName}` | Per-step observable state. |
-| Cloud Firestore (Native) | transaction | lock document (path TBD `/plan`) | Single-flight concurrency guard. |
+| Cloud Firestore (Native) | write | `runs/{date}` | Run document (keyed by date; `runId` is a ULID field — AD-1). |
+| Cloud Firestore (Native) | write | `runs/{date}/steps/{stepName}` | Per-step observable state. |
+| Cloud Firestore (Native) | transaction | `locks/minion` | Global single-flight concurrency guard (AD-2). |
 
 No external HTTP APIs are called in F-003 — Gmail, Jina, Imagen, and GitHub are stubbed and
 land in F-004–F-006. Firestore access uses `google-cloud-firestore` under the Minion SA's
@@ -128,9 +131,9 @@ land in F-004–F-006. Firestore access uses `google-cloud-firestore` under the 
 ## Acceptance Criteria
 
 - [ ] AC-1: `python -m minion run --date 2026-06-01` executes all nine stub steps and exits 0.
-- [ ] AC-2: The run document at `runs/{runId}` has `runId`, `date`, `status`, `startedAt`,
+- [ ] AC-2: The run document at `runs/{date}` has `runId`, `date`, `status`, `startedAt`,
       `endedAt`, and validates against `shared/schema/run.json`.
-- [ ] AC-3: Each step writes `runs/{runId}/steps/{stepName}` with `status`, `startedAt`,
+- [ ] AC-3: Each step writes `runs/{date}/steps/{stepName}` with `status`, `startedAt`,
       `endedAt`, `error?` (null on success).
 - [ ] AC-4: Replaying the same `--date` overwrites the prior run + step children with no
       duplicate or orphaned documents.

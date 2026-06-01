@@ -21,7 +21,7 @@ plus `pnpm check:codegen` from root.
     to `$ref` that enum. Update the `run.json` description to note the doc is keyed by date
     and `runId` is a ULID field (AD-1). Do not hand-edit generated files.
   - **Test**: from repo root `pnpm gen` succeeds, then `pnpm check:codegen` passes (no drift);
-    confirm `shared/generated/python/run.py` now exposes a `StepName` enum and `Run.error`.
+    confirm `shared/generated/veilleur_shared/run.py` now exposes a `StepName` enum and `Run.error`.
 
 - [x] **T-1.2**: Add the `python-ulid` dependency (AD-6)
   - **Do**: Add `python-ulid>=2.0` to `minion/pyproject.toml` `[project].dependencies`;
@@ -52,10 +52,11 @@ plus `pnpm check:codegen` from root.
     valid JSON containing the bound `runId`.
 
 - [x] **T-1.6**: Models module (`minion/src/minion/models.py`)
-  - **Do**: Re-export generated `Run`, `RunStep`, `RunStatus`, `StepName` from
-    `minion`'s view of `shared/generated/python` (per the F-002 import path). Add internal
-    Pydantic models not in the shared contract: `Lock` (`runId`, `date`, `startedAt`) and
-    a `StepResult`/`AbortReason` as needed. Document the date-key vs ULID `runId` split (AD-1).
+  - **Do**: Re-export generated `Run`, `RunStep`, `RunStatus`, `StepName` from the packaged
+    `veilleur_shared` module (codegen output in `shared/generated/veilleur_shared`, added to
+    `minion` as an editable uv path dependency). Add internal Pydantic models not in the
+    shared contract: `Lock` (`run_id`, `date`, `started_at`) and a `StepResult`/`AbortReason`
+    as needed. Document the date-key vs ULID `runId` split (AD-1).
   - **Test**: `cd minion && uv run pyright && uv run python -c "from minion.models import Run, StepName, Lock"`.
 
 ## Phase 2: Ports + adapters
