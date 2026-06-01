@@ -67,7 +67,7 @@
 ### Modified Files
 | File | Change |
 |------|--------|
-| `specs/roadmap.md` | F-002 status → Planning (this command), later → In Progress |
+| `specs/roadmap.md` | F-002 status → In Progress (the spec/plan/tasks flow updates it incrementally; the PR's net diff is `Not started` → `In Progress`) |
 | `.gitignore` | Add `shared/generated/`? **No** — generated output is committed (AD-2); confirm `.gitignore` already allows lockfiles (it does). Possibly add pnpm store path only if needed. |
 | `infra/` | Add a top-level placeholder (e.g. `infra/README.md`) for non-spike IaC; **do not touch `infra/spike/`** |
 

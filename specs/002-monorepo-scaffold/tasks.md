@@ -2,7 +2,7 @@
 
 **Plan**: specs/002-monorepo-scaffold/plan.md
 **Status**: Complete
-**Total**: 18 tasks across 6 phases
+**Total**: 21 tasks across 6 phases
 
 > Conventions: no root `CLAUDE.md` exists yet (it is a deliverable — T-6.1). Mirror the existing `minion/` setup: ruff line-length 100, py312, strict pyright, lockfiles committed (constitution §6). TS is `strict: true`, no `any`, ESLint + Prettier (constitution §4). Pin every tool version so codegen is deterministic. **Never touch `minion/src/minion/spike/`, `infra/spike/`, or the spike scripts** (AC-8).
 
