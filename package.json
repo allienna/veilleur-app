@@ -5,7 +5,7 @@
   "description": "Veilleur-app monorepo — Minion pipeline, PWA, trigger-api, shared types.",
   "packageManager": "pnpm@11.3.0",
   "engines": {
-    "node": ">=20"
+    "node": ">=22.13"
   },
   "scripts": {
     "lint": "pnpm -r --if-present run lint",
