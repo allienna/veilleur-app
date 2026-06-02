@@ -4,5 +4,9 @@ packages:
   - "trigger-api"
 
 # esbuild ships a prebuilt native binary via a postinstall script; Vite needs it.
+# firebase-admin (trigger-api, F-008) verifies tokens over HTTPS/JWKS and calls the Cloud Run REST
+# API — no gRPC/protobuf codegen at runtime — so its optional native build scripts stay disabled.
 allowBuilds:
+  "@firebase/util": false
   esbuild: true
+  protobufjs: false

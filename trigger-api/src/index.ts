@@ -1,17 +1,71 @@
-import { createServer } from "node:http";
+// Cloud Run service entrypoint (F-008). Thin node:http shim: read the request, delegate to the
+// pure `handleRequest` with the real Firebase + Cloud Run ports, write the JSON response. The
+// auth gate + invocation logic live in handler.ts (unit-tested). Structured logs to stdout are the
+// logging boundary (Cloud Logging captures them); tokens/PII are never logged.
 
-// Skeleton Cloud Run service. The single endpoint `POST /trigger` is stubbed
-// until F-008 wires Firebase JWT verification + Cloud Run Job invocation.
+import {
+  createServer,
+  type IncomingMessage,
+  type ServerResponse,
+} from "node:http";
+
+import { verifyToken } from "./firebase.js";
+import { handleRequest, type HandlerRequest } from "./handler.js";
+import { runJob } from "./jobRunner.js";
+
 const PORT = Number(process.env.PORT ?? 8080);
 
-const server = createServer((req, res) => {
-  if (req.method === "POST" && req.url === "/trigger") {
-    res.writeHead(501, { "content-type": "application/json" });
-    res.end(JSON.stringify({ error: "not_implemented", since: "F-008" }));
-    return;
-  }
-  res.writeHead(404, { "content-type": "application/json" });
-  res.end(JSON.stringify({ error: "not_found" }));
+function readBody(req: IncomingMessage): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const chunks: Buffer[] = [];
+    req.on("data", (chunk: Buffer) => chunks.push(chunk));
+    req.on("end", () => resolve(Buffer.concat(chunks).toString("utf8")));
+    req.on("error", reject);
+  });
+}
+
+function log(fields: Record<string, unknown>): void {
+  process.stdout.write(JSON.stringify({ level: "info", ...fields }) + "\n");
+}
+
+const server = createServer((req: IncomingMessage, res: ServerResponse) => {
+  void (async () => {
+    const body = req.method === "POST" ? await readBody(req) : "";
+    const headers: Record<string, string | undefined> = {};
+    for (const [key, value] of Object.entries(req.headers)) {
+      headers[key] = Array.isArray(value) ? value[0] : value;
+    }
+    const request: HandlerRequest = {
+      method: req.method ?? "GET",
+      url: req.url ?? "/",
+      headers,
+      body,
+    };
+
+    let result;
+    try {
+      result = await handleRequest(request, {
+        verifyToken,
+        runJob,
+        now: () => new Date(),
+      });
+    } catch (err) {
+      log({
+        level: "error",
+        msg: "handler crashed",
+        err: err instanceof Error ? err.message : "?",
+      });
+      result = { status: 500, body: { error: "internal" } };
+    }
+
+    log({
+      method: request.method,
+      path: request.url.split("?")[0],
+      status: result.status,
+    });
+    res.writeHead(result.status, { "content-type": "application/json" });
+    res.end(JSON.stringify(result.body));
+  })();
 });
 
 server.listen(PORT);

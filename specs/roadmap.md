@@ -78,6 +78,7 @@ Decomposes the PRD into vertically-sliced features ordered by dependency. Each f
 **Delivers**: Manual trigger callable with a valid JWT from any HTTPS client (curl + Postman first; PWA wires it in F-011).
 **Surfaces**: `minion` (sibling service)
 **Estimated size**: S
+**Status**: In Progress
 
 ### F-009: PWA scaffold + Auth + Reading
 **Summary**: React 18 + TS + Vite + Tailwind + shadcn/ui + `vite-plugin-pwa` on Firebase Hosting. Firebase Auth (Google sign-in), Firestore Security Rules (`email == <allowed> && email_verified`), client soft-check + `UnauthorizedScreen`. AppShell + AppHeader + Today + History views. ArticleCard, SkeletonCard, TagPill, ArticleView, EmptyState. Reads from Firestore (not Astro). LCP ≤2s on iPhone 4G.
