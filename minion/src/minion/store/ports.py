@@ -5,6 +5,7 @@ Firestore layout (AD-1, AD-2):
     runs/{date}                     run-level document (runId, status, timestamps, error)
     runs/{date}/steps/{stepName}    one observable child per step (constitution §2.9)
     locks/{minion}                  the single global concurrency lock
+    articles/{date}                 the published article the PWA reads (F-006)
 
 The schema's `Run.steps` array is the *assembled* view: `get_run` merges the run-level
 document with its step subcollection into a schema-valid `Run` (AC-2). Replaying a date
@@ -17,6 +18,7 @@ from datetime import datetime
 from typing import Protocol
 
 from minion.models import Lock, Run, RunStatus, RunStep
+from minion.publish.models import ArticleDoc
 
 
 class RunStore(Protocol):
@@ -53,4 +55,16 @@ class LockStore(Protocol):
 
     def release(self, run_id: str) -> None:
         """Release the lock iff it is currently held by `run_id` (no-op otherwise)."""
+        ...
+
+
+class ArticleStore(Protocol):
+    """Reads and writes the published article document the PWA renders (F-006 plan AD-3)."""
+
+    def put_article(self, date: str, article: ArticleDoc) -> None:
+        """Overwrite `articles/{date}` with `article` (idempotent by date, constitution §2.7)."""
+        ...
+
+    def get_article(self, date: str) -> ArticleDoc | None:
+        """Return the article persisted for `date`, or None."""
         ...

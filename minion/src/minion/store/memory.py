@@ -12,6 +12,7 @@ from datetime import datetime
 from minion.clock import Clock
 from minion.config import RUN_TIMEOUT, STEP_ORDER
 from minion.models import Lock, Run, RunStatus, RunStep, StepName
+from minion.publish.models import ArticleDoc
 
 
 class InMemoryRunStore:
@@ -57,6 +58,19 @@ class InMemoryRunStore:
             error=doc["error"],  # type: ignore[arg-type]
             steps=steps,
         )
+
+
+class InMemoryArticleStore:
+    """Article store backed by a dict; `put_article` overwrites by date (idempotent replay)."""
+
+    def __init__(self) -> None:
+        self._articles: dict[str, ArticleDoc] = {}
+
+    def put_article(self, date: str, article: ArticleDoc) -> None:
+        self._articles[date] = article
+
+    def get_article(self, date: str) -> ArticleDoc | None:
+        return self._articles.get(date)
 
 
 class InMemoryLockStore:

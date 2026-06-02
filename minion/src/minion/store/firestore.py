@@ -18,6 +18,7 @@ from google.cloud import firestore
 
 from minion.clock import Clock
 from minion.config import (
+    ARTICLES_COLLECTION,
     LOCK_DOC_ID,
     LOCKS_COLLECTION,
     RUN_TIMEOUT,
@@ -26,6 +27,7 @@ from minion.config import (
     STEPS_SUBCOLLECTION,
 )
 from minion.models import Lock, Run, RunStatus, RunStep, StepName
+from minion.publish.models import ArticleDoc
 
 
 def _step_to_doc(step: RunStep) -> dict[str, Any]:
@@ -100,6 +102,26 @@ class FirestoreRunStore:
             error=doc.get("error"),
             steps=steps,
         )
+
+
+class FirestoreArticleStore:
+    """`articles/{date}` documents — the published article the PWA reads (F-006 plan AD-3)."""
+
+    def __init__(self, client: firestore.Client) -> None:
+        self._client = client
+
+    def _article_ref(self, date: str) -> Any:
+        return self._client.collection(ARTICLES_COLLECTION).document(date)
+
+    def put_article(self, date: str, article: ArticleDoc) -> None:
+        # Full overwrite (no merge) so a replay leaves no stale fields (constitution §2.7).
+        self._article_ref(date).set(article.model_dump(mode="json"))
+
+    def get_article(self, date: str) -> ArticleDoc | None:
+        snapshot = self._article_ref(date).get()
+        if not snapshot.exists:
+            return None
+        return ArticleDoc.model_validate(cast("dict[str, Any]", snapshot.to_dict()))
 
 
 class FirestoreLockStore:

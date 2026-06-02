@@ -112,3 +112,47 @@ WHOLESALE_NGRAM: int = 12  # ≥ this many consecutive shared tokens ⇒ wholesa
 
 # Agentic validation-retry budget (PRD §6): re-invoke `/generate` with errors fed back.
 MAX_GENERATE_RETRIES: int = 2
+
+# --- Publish: Imagen + GitHub + Firestore (F-006) ----------------------------------------
+
+# Vertex AI Imagen (PRD §5: IAM-only, no key). Region/model promoted from the F-001 spike.
+IMAGEN_PROJECT_ID: str = "veilleur-app"
+IMAGEN_LOCATION: str = "europe-west1"
+IMAGEN_MODEL: str = "imagen-4.0-fast-generate-001"
+IMAGEN_ASPECT_RATIO: str = "16:9"  # PRD §2: every hero image is 16:9
+WEBP_QUALITY: int = 85  # PNG/JPEG → WebP conversion quality (spike parity)
+# One agentic prompt-rewrite retry on a moderation rejection before the placeholder (PRD §6 R2).
+IMAGEN_RETRIES: int = 1
+# The Le Veilleur brand template appended to the article's image_prompt (promoted from
+# spike.imagen.SPIKE_IMAGEN_PROMPT). Keeps the mascot on-brand and moderation-safe (DESIGN §0).
+IMAGEN_BRAND_TEMPLATE: str = (
+    "Featuring the mascot 'Le Veilleur' — a cartoon owl with navy plumage, large amber eyes, "
+    "friendly Pixar 3D style, soft studio lighting. 16:9 aspect ratio."
+)
+
+# GitHub Contents API target (FR-A4). Migration-phase override: writes to this monorepo to keep
+# the live v1 site clean while v2 is built; the eventual target is `allienna/veilleur` — a
+# one-constant switch tracked for F-007/F-013 (see plan AD-5 / Open Q#2).
+GITHUB_PAT_SECRET: str = "github-pat-allienna-pages"
+GITHUB_REPO_OWNER: str = "allienna"
+GITHUB_REPO_NAME: str = "veilleur-app"  # migration override; eventual target is "veilleur"
+GITHUB_BRANCH: str = "main"
+POST_MD_PATH_TEMPLATE: str = "site/src/content/posts/{date}-{slug}.md"
+POST_IMAGE_PATH_TEMPLATE: str = "site/public/images/posts/{date}.webp"
+GITHUB_TIMEOUT: timedelta = timedelta(seconds=30)  # per-request HTTP timeout
+GITHUB_RETRIES: int = 3  # retries after the first attempt on a commit failure (PRD §6)
+GITHUB_BACKOFF_BASE: timedelta = timedelta(seconds=1)  # exponential backoff unit
+
+# Firestore collection holding the published article the PWA reads (F-009). Sibling of `runs/`;
+# overwrite-by-date keeps replay idempotent (constitution §2.7).
+ARTICLES_COLLECTION: str = "articles"
+
+# Slug derivation from the article title (plan AD-6). Length-capped, URL-safe.
+SLUG_MAX_LEN: int = 80
+
+# Bundled generic Le Veilleur placeholder used when Imagen moderation can't be satisfied
+# (PRD §6 R2 → success_with_warnings). Loaded from minion.publish.assets via importlib.resources.
+PLACEHOLDER_ASSET: str = "placeholder.webp"
+
+# Run-level warning reason latched when the Imagen placeholder fallback fires (plan AD-4).
+IMAGEN_FALLBACK_WARNING: str = "imagen_moderation_fallback"

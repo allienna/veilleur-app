@@ -60,6 +60,7 @@ def run_pipeline(
         data: dict[str, object] = {}
         status = RunStatus.success
         run_error: str | None = None
+        warning_reason: str | None = None  # first run-level warning, latched (F-006 plan AD-4)
 
         for step in steps:
             step_log = bind(run_id, step=step.name.value)
@@ -96,6 +97,13 @@ def run_pipeline(
                 ),
             )
 
+            if result.warning is not None and warning_reason is None:
+                # Latch the first warning (plan AD-4): the step succeeded and the pipeline
+                # continues, but the final run status downgrades to success_with_warnings unless
+                # a later failure/terminal status overrides it. Per-step record stays success.
+                warning_reason = result.warning
+                step_log.warning("run warning latched", extra={"warning": warning_reason})
+
             if result.terminal_status is not None:
                 # Graceful early-exit (AD-3): the step succeeded but ends the run with a
                 # non-failure terminal status (e.g. skipped/no_sources). Halt remaining steps.
@@ -107,6 +115,10 @@ def run_pipeline(
                 )
                 break
 
+        if status is RunStatus.success and warning_reason is not None:
+            # Downgrade only a clean success (a failure/terminal status takes precedence, AD-4).
+            status = RunStatus.success_with_warnings
+            run_error = warning_reason
         run_store.finalize_run(date, status, clock.now(), run_error)
         log.info("run finished", extra={"status": status.value})
 

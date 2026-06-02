@@ -10,9 +10,16 @@ from minion.generate.fakes import FakeGenerateRunner
 from minion.ingest.fakes import FakeGmailClient, FakeJinaClient
 from minion.logging import bind
 from minion.models import StepName
+from minion.publish.fakes import (
+    FakeContentRepository,
+    FakeImageGenerator,
+    FakePromptRewriter,
+)
 from minion.steps import STEPS, StepContext, build_pipeline
 from minion.steps.generation import AssembleStep, GenerateStep, ValidateOutputStep
 from minion.steps.ingestion import GmailStep, JinaStep, ValidateInputStep
+from minion.steps.publish import GithubStep, ImagenStep, PublishStep
+from minion.store.memory import InMemoryArticleStore
 
 
 def test_steps_are_nine_in_canonical_order() -> None:
@@ -45,7 +52,15 @@ def test_generate_stub_has_article_shape() -> None:
 
 
 def test_build_pipeline_wires_real_steps_and_keeps_order() -> None:
-    pipeline = build_pipeline(FakeGmailClient(), FakeJinaClient(), FakeGenerateRunner())
+    pipeline = build_pipeline(
+        FakeGmailClient(),
+        FakeJinaClient(),
+        FakeGenerateRunner(),
+        FakeImageGenerator(),
+        FakePromptRewriter(),
+        FakeContentRepository(),
+        InMemoryArticleStore(),
+    )
     assert len(pipeline) == 9
     assert tuple(s.name for s in pipeline) == STEP_ORDER
     by_name = {s.name: s for s in pipeline}
@@ -55,15 +70,7 @@ def test_build_pipeline_wires_real_steps_and_keeps_order() -> None:
     assert isinstance(by_name[StepName.assemble], AssembleStep)
     assert isinstance(by_name[StepName.generate], GenerateStep)
     assert isinstance(by_name[StepName.validate_output], ValidateOutputStep)
-    # The remaining three slots stay stubs (F-006/F-012 replace them).
-    real_types = (
-        GmailStep,
-        JinaStep,
-        ValidateInputStep,
-        AssembleStep,
-        GenerateStep,
-        ValidateOutputStep,
-    )
-    assert not isinstance(by_name[StepName.imagen], real_types)
-    assert not isinstance(by_name[StepName.github], real_types)
-    assert not isinstance(by_name[StepName.publish], real_types)
+    # F-006: the final three slots are now real too (no remaining stubs in the production pipeline).
+    assert isinstance(by_name[StepName.imagen], ImagenStep)
+    assert isinstance(by_name[StepName.github], GithubStep)
+    assert isinstance(by_name[StepName.publish], PublishStep)
