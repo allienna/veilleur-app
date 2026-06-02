@@ -7,12 +7,14 @@ skip, paywall exclusion, and denylist filtering — driven through the real Gmai
 
 from __future__ import annotations
 
+import json
 from datetime import datetime
 
 import pytest
 
 from minion import config
 from minion.config import PARIS_TZ
+from minion.generate.fakes import FakeGenerateRunner
 from minion.ingest.fakes import FakeGmailClient, FakeJinaClient
 from minion.ingest.models import Newsletter, ScrapedSource, SourceOutcome
 from minion.models import Run, RunStatus
@@ -21,6 +23,18 @@ from minion.steps import build_pipeline
 
 DATE = "2026-06-01"
 T0 = datetime(2026, 6, 1, 6, 0, tzinfo=PARIS_TZ)
+
+# A valid `/generate` artefact so runs that pass validate_input flow through the real
+# generation steps (F-005). Generation specifics are covered by test_generation_pipeline.py.
+_VALID_ARTIFACT = json.dumps(
+    {
+        "theme": "ai",
+        "frontmatter": {"title": "T", "date": "2026-06-02", "description": "d", "tags": ["ai"]},
+        "body": "a clean synthesis body",
+        "linkedin": "a post",
+        "image_prompt": "a prompt",
+    }
+)
 
 
 def _newsletter(sender: str, urls: list[str]) -> Newsletter:
@@ -36,7 +50,8 @@ def _jina_with_outcomes(
 
 
 def _run(gmail: FakeGmailClient, jina: FakeJinaClient, run_store, lock_store, clock) -> Run:
-    steps = build_pipeline(gmail, jina)
+    runner = FakeGenerateRunner(outputs=[_VALID_ARTIFACT])
+    steps = build_pipeline(gmail, jina, runner)
     return run_pipeline(DATE, run_store=run_store, lock_store=lock_store, clock=clock, steps=steps)
 
 

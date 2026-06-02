@@ -67,3 +67,48 @@ PAYWALL_MARKERS: tuple[str, ...] = (
 # ≥5 sources OK; otherwise the run hard-fails.
 MIN_SOURCES_OK: int = 5
 MIN_SOURCES_FRACTION: float = 0.5
+
+# --- Generation / `/generate` (F-005) ----------------------------------------------------
+
+# Secret holding the Claude Code OAuth token (`claude setup-token`). The generate subprocess
+# authenticates via this; ANTHROPIC_API_KEY is stripped from its env (constitution §2.2).
+ANTHROPIC_OAUTH_TOKEN_SECRET: str = "anthropic-oauth-token"
+
+# The agentic invocation (promoted from spike/claude_probe). `/generate` ships in the pinned
+# allienna/claude-feature-flow plugin installed in the Minion image (constitution §3, F-007).
+CLAUDE_CMD: tuple[str, ...] = (
+    "claude",
+    "-p",
+    "/generate",
+    "--permission-mode",
+    "bypassPermissions",
+)
+CLAUDE_TIMEOUT: timedelta = timedelta(minutes=8)  # PRD §4: ≤4 min target, 8 min ceiling
+CLAUDE_BACKOFF_BASE: timedelta = timedelta(seconds=2)  # transport-retry backoff unit
+CLAUDE_TRANSPORT_RETRIES: int = (
+    2  # retries on a Claude transport error (PRD §6), distinct from validation retries
+)
+
+# Per-run caps (PRD §3 Scalability). Token budgets use a char heuristic (AD-10/AD-12), not a
+# real tokenizer — a guard, not an exact bound.
+MAX_GENERATE_INPUT_TOKENS: int = 500_000
+MAX_GENERATE_OUTPUT_TOKENS: int = 30_000
+MAX_ARTICLE_WORDS: int = 10_000
+MAX_LINKEDIN_CHARS: int = 3000
+MAX_IMAGE_PROMPT_CHARS: int = 1000
+
+# Astro article frontmatter — required field set and the theme allowlist. Source of truth is
+# the external allienna/veilleur content-collection schema (AD-5); reconcile in burn-in (F-013).
+REQUIRED_FRONTMATTER_FIELDS: tuple[str, ...] = ("title", "date", "description", "tags")
+THEME_ALLOWLIST: frozenset[str] = frozenset(
+    {"ai", "cloud", "devops", "web", "data", "security", "mobile", "other"}
+)
+DEFAULT_THEME: str = "other"  # unknown theme normalizes here (PRD §6 — not an error)
+
+# Copyright post-validator (constitution §4 / FR-A3).
+MAX_QUOTE_WORDS: int = 30  # max words in a single direct quote per source
+MAX_QUOTES_PER_SOURCE: int = 1  # max distinct quotes attributable to one source
+WHOLESALE_NGRAM: int = 12  # ≥ this many consecutive shared tokens ⇒ wholesale reproduction
+
+# Agentic validation-retry budget (PRD §6): re-invoke `/generate` with errors fed back.
+MAX_GENERATE_RETRIES: int = 2

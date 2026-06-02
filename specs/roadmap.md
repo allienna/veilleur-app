@@ -51,6 +51,7 @@ Decomposes the PRD into vertically-sliced features ordered by dependency. Each f
 **Delivers**: End-to-end article + LinkedIn + image-prompt generation. **The runtime literally executes a versioned spec — this is the on-stage thesis incarnated.**
 **Surfaces**: `minion`
 **Estimated size**: L
+**Status**: In Progress
 
 ### F-006: Imagen 4 Fast + GitHub publish
 **Summary**: Vertex AI Imagen (`imagen-4.0-fast-generate-001`) image generation with moderation-rejection fallback (agentic prompt rewrite → placeholder image, status `success_with_warnings`). GitHub Contents API commit to `allienna/allienna.github.io` under `veilleur/site/content/posts/` + `public/images/posts/`, idempotent by date, 3-retry backoff.

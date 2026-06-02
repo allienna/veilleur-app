@@ -42,6 +42,12 @@ packages = ["src/minion"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# The gated real-`claude` test (F-005 AD-11) is deselected by default so CI/build-minion stays
+# hermetic; run it explicitly with `uv run pytest -m integration`.
+addopts = "-m 'not integration'"
+markers = [
+    "integration: exercises the real `claude` CLI / plugin (needs the binary + OAuth token; off by default)",
+]
 
 [tool.ruff]
 line-length = 100
