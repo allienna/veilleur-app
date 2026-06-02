@@ -128,3 +128,8 @@ def test_validate_output_fails_closed_on_errors() -> None:
     report = ValidationReport(errors=[ValidationError(code="x", message="bad")])
     with pytest.raises(OutputValidationError):
         ValidateOutputStep().run(_ctx({"report": report}))
+
+
+def test_validate_output_fails_closed_when_report_missing() -> None:
+    with pytest.raises(OutputValidationError, match="no validation report"):
+        ValidateOutputStep().run(_ctx({}))

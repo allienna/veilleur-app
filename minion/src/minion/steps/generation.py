@@ -131,7 +131,10 @@ class ValidateOutputStep:
     name: StepName = StepName.validate_output
 
     def run(self, ctx: StepContext) -> StepResult:
-        report = cast("ValidationReport", ctx.data.get("report") or ValidationReport(errors=[]))
+        report = ctx.data.get("report")
+        if not isinstance(report, ValidationReport):
+            # Fail closed: a missing report means `generate` never produced one (AD-3).
+            raise OutputValidationError("output validation failed: no validation report")
         if not report.ok:
             codes = ", ".join(e.code for e in report.errors)
             raise OutputValidationError(f"output validation failed: {codes}")

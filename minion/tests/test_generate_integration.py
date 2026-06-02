@@ -14,14 +14,20 @@ import shutil
 
 import pytest
 
+from minion import config
 from minion.generate.models import AssembledContext, ContextSource, GeneratedArticle
 from minion.generate.runner import ClaudeGenerateRunner
+from minion.secrets import MissingSecretError, require
 
 
 @pytest.mark.integration
 def test_real_generate_emits_parseable_artefact() -> None:
     if shutil.which("claude") is None:
         pytest.skip("claude binary not on PATH")
+    try:
+        require(config.ANTHROPIC_OAUTH_TOKEN_SECRET)
+    except MissingSecretError:
+        pytest.skip("OAuth token secret not provisioned")
 
     context = AssembledContext(
         sources=[

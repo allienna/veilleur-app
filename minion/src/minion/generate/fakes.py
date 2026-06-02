@@ -32,5 +32,7 @@ class FakeGenerateRunner:
         self.calls.append(list(feedback))
         if self.error is not None:
             raise self.error
+        if not self.outputs:
+            raise AssertionError("FakeGenerateRunner needs `outputs` or an `error` configured")
         index = len(self.calls) - 1
         return self.outputs[min(index, len(self.outputs) - 1)]

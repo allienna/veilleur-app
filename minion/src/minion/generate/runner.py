@@ -14,6 +14,7 @@ feedback are written to a temp JSON file whose path is passed to the command. Tr
 
 from __future__ import annotations
 
+import contextlib
 import json
 import os
 import subprocess
@@ -67,7 +68,9 @@ class ClaudeGenerateRunner:
         except subprocess.TimeoutExpired as exc:
             raise GenerateTransportError("claude /generate timed out") from exc
         finally:
-            os.unlink(context_path)
+            # Don't let cleanup mask a subprocess/timeout error if the temp file is already gone.
+            with contextlib.suppress(FileNotFoundError):
+                os.unlink(context_path)
 
         if result.returncode != 0:
             raise GenerateTransportError(
