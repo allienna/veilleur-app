@@ -43,7 +43,8 @@ test("AC-1: allowed verified token invokes the job and returns 202 { date, execu
   const res = await handleRequest(req(), d);
   assert.equal(res.status, 202);
   assert.deepEqual(res.body, { date: "2026-06-01", execution: "exec-fake-1" });
-  assert.deepEqual(d.runner.calls, [undefined]); // no date → run today
+  // The resolved Europe/Paris date is passed explicitly (deterministic; no midnight drift).
+  assert.deepEqual(d.runner.calls, ["2026-06-01"]);
 });
 
 test("AC-1: optional valid date is passed through to runJob and echoed", async () => {
@@ -131,14 +132,21 @@ test("AC-5: runJob failure → 500, no internal detail leaked", async () => {
   assert.deepEqual(res.body, { error: "invoke_failed" });
 });
 
-test("bad JSON / bad date → 400, no invocation", async () => {
-  const d = deps();
-  const res = await handleRequest(
-    req({ body: JSON.stringify({ date: "20-05-2026" }) }),
-    d,
-  );
-  assert.equal(res.status, 400);
-  assert.deepEqual(d.runner.calls, []);
+test("malformed body → 400, no invocation (bad date, malformed JSON, non-object JSON)", async () => {
+  const bodies = [
+    JSON.stringify({ date: "20-05-2026" }), // valid JSON, invalid date format
+    "{ not json", // malformed JSON
+    "null", // valid JSON, not an object
+    "[]", // valid JSON array
+    '"x"', // valid JSON string
+    "42", // valid JSON number
+  ];
+  for (const body of bodies) {
+    const d = deps();
+    const res = await handleRequest(req({ body }), d);
+    assert.equal(res.status, 400, `body=${body}`);
+    assert.deepEqual(d.runner.calls, [], `body=${body}`);
+  }
 });
 
 test("GET /healthz → 200", async () => {

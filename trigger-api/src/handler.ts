@@ -48,6 +48,10 @@ function parseDate(body: string): string | undefined | "INVALID" {
   } catch {
     return "INVALID";
   }
+  // A non-object body (null, array, string, number) can't carry `{ date }` — reject as malformed
+  // rather than crashing on a `.date` read.
+  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed))
+    return "INVALID";
   const date = (parsed as { date?: unknown }).date;
   if (date === undefined) return undefined;
   return typeof date === "string" && DATE_RE.test(date) ? date : "INVALID";
@@ -87,9 +91,11 @@ export async function handleRequest(
   if (date === "INVALID")
     return { status: 400, body: { error: "bad_request" } };
 
+  // Resolve the date once and pass it explicitly so the run date is deterministic and always
+  // matches the response (avoids Europe/Paris midnight drift vs the Job computing its own "today").
   const targetDate = date ?? parisDate(deps.now());
   try {
-    const { execution } = await deps.runJob(date);
+    const { execution } = await deps.runJob(targetDate);
     return { status: 202, body: { date: targetDate, execution } };
   } catch {
     return { status: 500, body: { error: "invoke_failed" } };

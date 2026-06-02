@@ -30,41 +30,45 @@ function log(fields: Record<string, unknown>): void {
 
 const server = createServer((req: IncomingMessage, res: ServerResponse) => {
   void (async () => {
-    const body = req.method === "POST" ? await readBody(req) : "";
-    const headers: Record<string, string | undefined> = {};
-    for (const [key, value] of Object.entries(req.headers)) {
-      headers[key] = Array.isArray(value) ? value[0] : value;
-    }
-    const request: HandlerRequest = {
-      method: req.method ?? "GET",
-      url: req.url ?? "/",
-      headers,
-      body,
-    };
-
-    let result;
+    // Everything — including reading the body — is inside the try so a stream error (client
+    // disconnect, aborted upload) becomes a controlled 500, never an unhandled rejection.
     try {
-      result = await handleRequest(request, {
+      const body = req.method === "POST" ? await readBody(req) : "";
+      const headers: Record<string, string | undefined> = {};
+      for (const [key, value] of Object.entries(req.headers)) {
+        headers[key] = Array.isArray(value) ? value[0] : value;
+      }
+      const request: HandlerRequest = {
+        method: req.method ?? "GET",
+        url: req.url ?? "/",
+        headers,
+        body,
+      };
+
+      const result = await handleRequest(request, {
         verifyToken,
         runJob,
         now: () => new Date(),
       });
+
+      log({
+        method: request.method,
+        path: request.url.split("?")[0],
+        status: result.status,
+      });
+      res.writeHead(result.status, { "content-type": "application/json" });
+      res.end(JSON.stringify(result.body));
     } catch (err) {
       log({
         level: "error",
-        msg: "handler crashed",
+        msg: "request failed",
         err: err instanceof Error ? err.message : "?",
       });
-      result = { status: 500, body: { error: "internal" } };
+      if (!res.headersSent) {
+        res.writeHead(500, { "content-type": "application/json" });
+        res.end(JSON.stringify({ error: "internal" }));
+      }
     }
-
-    log({
-      method: request.method,
-      path: request.url.split("?")[0],
-      status: result.status,
-    });
-    res.writeHead(result.status, { "content-type": "application/json" });
-    res.end(JSON.stringify(result.body));
   })();
 });
 
