@@ -1,5 +1,6 @@
 # Daily autonomous trigger (FR-A1 / FR-4): fire the Minion Job at 06:00 Europe/Paris. The job is
-# invoked via an OIDC-authed POST to the Cloud Run Jobs `:run` endpoint, authenticated by the
+# invoked via a POST to the Cloud Run Jobs `:run` endpoint authenticated with an OAuth access token
+# (the right mechanism for a googleapis.com REST call — `oauth_token`, not OIDC), minted for the
 # dedicated scheduler-invoker SA (run.invoker only — binding in job.tf). The Job's own Firestore
 # lock (F-003) prevents overlap if a run is still in flight.
 resource "google_cloud_scheduler_job" "minion_daily" {

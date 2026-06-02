@@ -12,7 +12,7 @@ The production stack (Terraform, `europe-west1`). Operate it with [`RUNBOOK.md`]
 | `apis.tf` | Enables only the **new** APIs (scheduler, pubsub, cloud functions/build, eventarc, billing budgets). |
 | `iam.tf` | Runtime `minion-sa` (per-secret accessor + `aiplatform.user`/`datastore.user`), `scheduler-invoker-sa`, `budget-killswitch-sa`. |
 | `job.tf` | Cloud Run Job `minion` (`timeout=1200s`, `max_retries=0`, image under `ignore_changes`) + `run.invoker` for the scheduler SA. |
-| `scheduler.tf` | Cloud Scheduler `minion-daily` — `0 6 * * *` Europe/Paris, OIDC/OAuth → Jobs `:run`. |
+| `scheduler.tf` | Cloud Scheduler `minion-daily` — `0 6 * * *` Europe/Paris, OAuth-token (scheduler SA) → Jobs `:run`. |
 | `killswitch.tf` | 30 EUR/mo budget → Pub/Sub → 2nd-gen function that pauses the Scheduler at 100% (constitution §2.10). |
 | `outputs.tf` | Job/scheduler names, SA emails, Artifact Registry URL. |
 

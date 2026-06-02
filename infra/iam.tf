@@ -22,7 +22,9 @@ locals {
 resource "google_secret_manager_secret_iam_member" "minion_accessor" {
   for_each = toset(local.minion_runtime_secrets)
 
-  secret_id = each.key
+  # Fully-qualified resource name (not the short id) so the binding can't accidentally resolve
+  # against a different project if provider config changes.
+  secret_id = "projects/${var.project_id}/secrets/${each.key}"
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${google_service_account.minion.email}"
 }

@@ -60,9 +60,12 @@ runbook and executed by the operator**, not automated in CI (see Out of Scope / 
 Promote `minion/Dockerfile` to production: switch the entrypoint from the spike
 (`python -m minion.spike`) to the real CLI (`python -m minion`, default subcommand `run`), keep the
 multi-stage build (Python 3.12 + Node 20 + git, non-root `minion` user with a writable HOME for
-`claude`), and **install the pinned `allienna/claude-feature-flow` plugin** so `claude -p
-"/generate"` resolves in-container (constitution §3, F-005 FR-9). The image MUST build for
-`linux/amd64` (Cloud Run runs amd64). `ANTHROPIC_API_KEY` is never baked in (constitution §2.2).
+`claude`), and **copy in the vendored `/generate` command** (`minion/.claude/commands/generate.md`)
+so `claude -p "/generate"` resolves in-container. **(Implementation note:** `/generate` turned out
+not to live in the `allienna/claude-feature-flow` plugin — it is a legacy Veilleur v1 command, now
+vendored in-repo per constitution §3; see plan AD-2.) The image MUST build for `linux/amd64` from
+the **repo root** (`-f minion/Dockerfile .`) so the `veilleur-shared` path dep resolves.
+`ANTHROPIC_API_KEY` is never baked in (constitution §2.2).
 
 ### FR-2: Production Terraform root (`infra/`)
 A top-level `infra/` Terraform root (sibling of `infra/spike/`) that declares the production stack,
@@ -126,12 +129,12 @@ apply on merge), consistent with `deploy-pwa` being guarded until its track.
 
 | Interface | Mechanism | Purpose |
 |-----------|-----------|---------|
-| Cloud Scheduler → Cloud Run Jobs | OIDC-authed HTTP to the Jobs `:run` endpoint (scheduler SA, `run.invoker`) | Daily 06:00 Europe/Paris trigger (FR-A1). |
+| Cloud Scheduler → Cloud Run Jobs | OAuth-token HTTP to the Jobs `:run` endpoint (scheduler SA, `run.invoker`) | Daily 06:00 Europe/Paris trigger (FR-A1). |
 | Cloud Run Job → Secret Manager | SA `secretAccessor` per-secret | OAuth token / Gmail refresh / GitHub PAT at runtime. |
 | Cloud Run Job → Vertex AI / Firestore | SA `aiplatform.user` / `datastore.user` | Imagen + run/article persistence (no keys). |
 | Cloud Billing → Pub/Sub → Cloud Function → Scheduler | budget threshold event → function → `scheduler.jobs.pause` | The 100 %-of-30 € kill-switch (FR-5). |
 | Artifact Registry | `gcloud run jobs update --image` | Image distribution + Job image bump (FR-6). |
-| `allienna/claude-feature-flow` plugin | installed into the image | Ships `/generate` so the agentic step runs in-container (FR-1). |
+| Vendored `/generate` command (`minion/.claude/commands/generate.md`) | copied into the image | The agentic step's versioned spec (ported from legacy v1; not the claude-feature-flow plugin). |
 
 ## Error Scenarios
 
@@ -147,9 +150,9 @@ apply on merge), consistent with `deploy-pwa` being guarded until its track.
 
 ## Acceptance Criteria
 
-- [ ] AC-1: `docker buildx build --platform linux/amd64 minion/` produces an image whose entrypoint
-      runs `python -m minion run`, with `claude`, `git`, Node 20, and the `/generate` plugin present,
-      running as the non-root `minion` user.
+- [ ] AC-1: `docker buildx build --platform linux/amd64 -f minion/Dockerfile .` (repo-root context)
+      produces an image whose entrypoint runs `python -m minion run`, with `claude`, `git`, Node 20,
+      and the vendored `/generate` command present, running as the non-root `minion` user.
 - [ ] AC-2: `terraform -chdir=infra plan` is clean and `validate`/`fmt -check` pass; the root
       declares the Cloud Run Job, Cloud Scheduler job, both SAs, per-secret accessor + project IAM,
       Firestore, Artifact Registry, and the budget→pubsub→function kill-switch.
@@ -197,8 +200,9 @@ apply on merge), consistent with `deploy-pwa` being guarded until its track.
    only the *new* resources (Job rename, Scheduler, kill-switch)? Decide the migration strategy in
    `/plan`.
 3. **Cloud Run Job vs Service for the trigger target.** The daily trigger is a Job (one-shot
-   semantics). Confirm Scheduler invokes the Jobs `:run` endpoint via OIDC (vs an intermediary).
-   The PWA manual trigger is a separate `trigger-api` (F-008) — F-007 only wires the cron path.
+   semantics). *(Resolved: Scheduler invokes the Jobs `:run` endpoint directly with an OAuth access
+   token — the right auth for a googleapis.com REST call.)* The PWA manual trigger is a separate
+   `trigger-api` (F-008) — F-007 only wires the cron path.
 4. **Kill-switch action granularity.** On 100 %, disable only the Scheduler (cheapest, reversible),
    or also stop in-flight Jobs / disable the Job? **Recommendation:** pause the Scheduler only —
    in-flight runs are ≤20 min and ≤ the daily cost; simpler and reversible. Confirm.

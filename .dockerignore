@@ -21,5 +21,8 @@ docs
 *.md
 .env
 .env.*
+# minion/README.md is the project `readme` and is COPY'd in the builder stage. (`*.md` only matches
+# top-level files in Docker's matcher, so nested READMEs aren't excluded — kept explicit for clarity.)
+!minion/README.md
 # The vendored /generate command must reach the context (copied into the image).
 !minion/.claude/commands/generate.md

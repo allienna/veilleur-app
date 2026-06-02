@@ -2,8 +2,9 @@
 # scripts/image-smoke.sh — F-007 T-1.3
 #
 # In-image smoke test for the production Minion image: asserts the agentic toolchain and the
-# vendored `/generate` command are present and the CLI entrypoint resolves. Run after a build:
-#   docker buildx build --platform linux/amd64 -t veilleur-minion:dev minion/
+# vendored `/generate` command are present and the CLI entrypoint resolves. The build context is
+# the REPO ROOT (the Minion needs the ../shared path dep), so build with `-f minion/Dockerfile .`:
+#   docker buildx build --platform linux/amd64 -f minion/Dockerfile -t veilleur-minion:dev --load .
 #   ./scripts/image-smoke.sh veilleur-minion:dev
 #
 # Exits non-zero on the first failed check.
