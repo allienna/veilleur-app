@@ -1,11 +1,15 @@
-# Veilleur Minion — Hello-Veilleur spike image (F-001).
+# Veilleur Minion — production image (F-007).
 #
 # Multi-stage: a uv builder produces a self-contained venv at /opt/venv (project installed
 # NON-editable, so stage 2 needs no source copy), and the runtime stage adds Node 20 +
-# @anthropic-ai/claude-code + git on top of python:3.12-slim.
+# @anthropic-ai/claude-code + git on top of python:3.12-slim, plus the vendored `/generate`
+# command (minion/.claude/commands/generate.md — ported from the legacy v1 app, constitution §3).
 #
-# MUST be built for linux/amd64 (Cloud Run Jobs run amd64). On Apple Silicon:
-#   docker buildx build --platform linux/amd64 -t veilleur-spike:dev minion/
+# BUILD CONTEXT IS THE REPO ROOT (not minion/): the Minion depends on `veilleur-shared` via a
+# path dependency at ../shared (the generated cross-boundary Pydantic models), which lives outside
+# minion/. MUST be built for linux/amd64 (Cloud Run Jobs run amd64). From the repo root:
+#   docker buildx build --platform linux/amd64 -f minion/Dockerfile -t veilleur-minion:dev .
+# Smoke the result with: ./scripts/image-smoke.sh veilleur-minion:dev
 
 # ─── Stage 1: build the Python venv with uv ──────────────────────────────────────────────
 FROM python:3.12-slim AS builder
@@ -16,12 +20,18 @@ ENV UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy \
     UV_PROJECT_ENVIRONMENT=/opt/venv
 
-WORKDIR /app
+WORKDIR /app/minion
 
-# Deps first (cached unless pyproject/lock change), then the project non-editable.
-COPY pyproject.toml uv.lock README.md ./
+# The veilleur-shared path dependency (../shared, editable) must resolve from minion/pyproject.toml,
+# so place shared at /app/shared first. Only its packaging + generated package are needed (not
+# node_modules / schema / scripts).
+COPY shared/pyproject.toml /app/shared/pyproject.toml
+COPY shared/generated/veilleur_shared /app/shared/generated/veilleur_shared
+
+# Deps first (cached unless pyproject/lock/shared change), then the project non-editable.
+COPY minion/pyproject.toml minion/uv.lock minion/README.md ./
 RUN uv sync --frozen --no-dev --no-install-project
-COPY src ./src
+COPY minion/src ./src
 RUN uv sync --frozen --no-dev --no-editable
 
 # ─── Stage 2: runtime (Python + Node 20 + claude-code + git) ──────────────────────────────
@@ -57,4 +67,12 @@ RUN useradd --create-home --uid 1000 minion
 USER minion
 WORKDIR /home/minion
 
-ENTRYPOINT ["python", "-m", "minion.spike"]
+# Install the `/generate` slash command so `claude -p "/generate"` resolves for the `minion` user.
+# It is a Veilleur-domain command (ported from the legacy v1 app) and is VENDORED in this repo at
+# minion/.claude/commands/generate.md — the runtime literally executes this versioned spec (the
+# talk thesis). Constitution §3 originally placed it in the claude-feature-flow plugin; that plugin
+# has no /generate, so v2 vendors it with the Minion (constitution updated to match).
+COPY --chown=minion:minion minion/.claude/commands/ /home/minion/.claude/commands/
+
+ENTRYPOINT ["python", "-m", "minion"]
+CMD ["run"]

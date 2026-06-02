@@ -69,6 +69,7 @@ Decomposes the PRD into vertically-sliced features ordered by dependency. Each f
 **Delivers**: First scheduler-fired production run. **This is M7 — production live.**
 **Surfaces**: `minion` infra
 **Estimated size**: M
+**Status**: In Progress
 
 ### F-008: trigger-api micro-service
 **Summary**: Cloud Run service (~50 LOC) that verifies Firebase Auth JWT, asserts `email == <allowed> && email_verified`, invokes the Cloud Run Job with payload, returns `runId`. Single endpoint `POST /trigger`. Allowed-email constant pinned per F-002 invariant.

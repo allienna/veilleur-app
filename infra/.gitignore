@@ -1,0 +1,8 @@
+# Terraform working files (production root). State lives remotely / locally per the runbook.
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+*.tfvars
+.build/
+crash.log

@@ -1,0 +1,25 @@
+# Repo-root Docker context for minion/Dockerfile (F-007). The build only needs minion/
+# (pyproject, uv.lock, README, src, .claude/commands) and shared/ (pyproject + generated
+# veilleur_shared). Keep the context small — exclude everything heavy or irrelevant.
+**/node_modules
+**/.venv
+**/__pycache__
+**/*.pyc
+**/*.pyo
+**/.pytest_cache
+**/.ruff_cache
+**/.terraform
+**/*.tfstate*
+.git
+.github
+pwa
+trigger-api
+infra
+functions
+specs
+docs
+*.md
+.env
+.env.*
+# The vendored /generate command must reach the context (copied into the image).
+!minion/.claude/commands/generate.md
