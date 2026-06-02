@@ -83,6 +83,32 @@ The Job reads the latest secret version on its next run; no redeploy needed.
 - **Disabling the kill-switch itself requires a PR** — never remove `infra/killswitch.tf` or detach
   the budget out-of-band (constitution §2.10).
 
+## 4b. trigger-api — deploy + live JWT smoke (F-008, AC-9)
+
+The manual-trigger Cloud Run **service**. Prereq: **Firebase Auth enabled** on the project with
+Google sign-in (F-009 owns this; until then sign in once manually to mint a token).
+
+```bash
+# 1. Build + push the service image (repo-root context)
+./scripts/deploy-trigger-api.sh           # pushes :latest; service not created yet → prints next step
+
+# 2. Create the service + SA + bindings
+terraform -chdir=infra apply
+
+# 3. Bump to the freshly-built image
+./scripts/deploy-trigger-api.sh
+
+# 4. Smoke with a REAL operator Firebase ID token
+URL=$(terraform -chdir=infra output -raw trigger_api_url)
+curl -s -X POST -H "Authorization: Bearer $OPERATOR_ID_TOKEN" "$URL/trigger"
+#   → 202 { "date": "YYYY-MM-DD", "execution": "..." }; a new runs/{date} appears (same shape as cron)
+
+# 5. Negative check — a non-allowed / missing token is rejected
+curl -s -o /dev/null -w '%{http_code}\n' -X POST "$URL/trigger"        # → 401
+```
+
+Record evidence (the `202`, the `runs/{date}` doc, the `401`) in `specs/008-trigger-api/`.
+
 ## 5. Recovery — replay a missed/failed day
 
 Runs are idempotent by date (constitution §2.7); replaying overwrites cleanly:

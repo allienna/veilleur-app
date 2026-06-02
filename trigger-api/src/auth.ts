@@ -4,5 +4,18 @@
 // scripts/check-allowed-email.sh.
 export const ALLOWED_OPERATOR_EMAIL = "aurelien.allienne@gmail.com"; // allowed-email-pin
 
-// TODO(F-008): verify Firebase Auth JWT, assert email === ALLOWED_OPERATOR_EMAIL
-// && email_verified === true, then invoke the Cloud Run Job and return { runId }.
+import { ForbiddenError, type TokenClaims } from "./ports.js";
+
+/**
+ * Authorize the verified token's claims (PRD FR-F1, constitution §2.1). Throws `ForbiddenError`
+ * unless the email is the single allowed operator AND is verified. Authentication (a valid token)
+ * is established earlier by the `TokenVerifier`; this is the authorization step.
+ */
+export function assertAllowed(claims: TokenClaims): void {
+  if (
+    claims.email !== ALLOWED_OPERATOR_EMAIL ||
+    claims.emailVerified !== true
+  ) {
+    throw new ForbiddenError("not the allowed operator identity");
+  }
+}

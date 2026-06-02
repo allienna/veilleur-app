@@ -1,0 +1,16 @@
+# BuildKit uses this in preference to the repo-root .dockerignore for `trigger-api/Dockerfile`.
+# Context is the repo root (pnpm workspace), so keep the pnpm members (shared, pwa, trigger-api) +
+# the lockfile/workspace manifest; drop everything heavy or unrelated to this image.
+**/node_modules
+**/.venv
+**/__pycache__
+**/dist
+**/.terraform
+**/*.tfstate*
+.git
+.github
+minion
+infra
+functions
+specs
+docs

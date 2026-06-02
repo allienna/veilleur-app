@@ -1,0 +1,38 @@
+name: build-trigger-api
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "trigger-api/**"
+      - "shared/**"
+      - ".github/workflows/build-trigger-api.yml"
+  pull_request:
+    paths:
+      - "trigger-api/**"
+      - "shared/**"
+      - ".github/workflows/build-trigger-api.yml"
+
+jobs:
+  build-trigger-api:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: "11.3.0"
+      - uses: actions/setup-node@v4
+        with:
+          # pnpm 11.3 imports node:sqlite, available in Node 22.13+.
+          node-version: "22"
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Lint
+        run: pnpm --filter @veilleur/trigger-api run lint
+      - name: Typecheck
+        run: pnpm --filter @veilleur/trigger-api run typecheck
+      - name: Build
+        run: pnpm --filter @veilleur/trigger-api run build
+      - name: Test
+        run: pnpm --filter @veilleur/trigger-api run test
