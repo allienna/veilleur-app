@@ -11,5 +11,7 @@ tests
 .dockerignore
 *.md
 !README.md
+# The vendored /generate command must reach the build context (F-007 — copied into the image).
+!.claude/commands/*.md
 .env
 .env.*

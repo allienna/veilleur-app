@@ -1,0 +1,28 @@
+# Repo-root Docker context for minion/Dockerfile (F-007). The build only needs minion/
+# (pyproject, uv.lock, README, src, .claude/commands) and shared/ (pyproject + generated
+# veilleur_shared). Keep the context small — exclude everything heavy or irrelevant.
+**/node_modules
+**/.venv
+**/__pycache__
+**/*.pyc
+**/*.pyo
+**/.pytest_cache
+**/.ruff_cache
+**/.terraform
+**/*.tfstate*
+.git
+.github
+pwa
+trigger-api
+infra
+functions
+specs
+docs
+*.md
+.env
+.env.*
+# minion/README.md is the project `readme` and is COPY'd in the builder stage. (`*.md` only matches
+# top-level files in Docker's matcher, so nested READMEs aren't excluded — kept explicit for clarity.)
+!minion/README.md
+# The vendored /generate command must reach the context (copied into the image).
+!minion/.claude/commands/generate.md
