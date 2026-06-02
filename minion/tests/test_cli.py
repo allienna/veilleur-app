@@ -7,6 +7,8 @@ from click.testing import CliRunner
 from minion import cli as cli_mod
 from minion.cli import cli
 from minion.clock import Clock
+from minion.generate.fakes import FakeGenerateRunner
+from minion.generate.ports import GenerateRunner
 from minion.ingest.fakes import FakeGmailClient, FakeJinaClient
 from minion.ingest.ports import GmailClient, JinaClient
 from minion.store.memory import InMemoryLockStore, InMemoryRunStore
@@ -33,8 +35,9 @@ def test_wired_run_exits_zero(monkeypatch) -> None:  # type: ignore[no-untyped-d
     def fake_build(clock: Clock) -> tuple[InMemoryRunStore, InMemoryLockStore]:
         return InMemoryRunStore(), InMemoryLockStore(clock)
 
-    def fake_clients() -> tuple[GmailClient, JinaClient]:
-        return FakeGmailClient(), FakeJinaClient()  # empty mailbox → skipped run
+    def fake_clients() -> tuple[GmailClient, JinaClient, GenerateRunner]:
+        # Empty mailbox → run skips at validate_input, before generate.
+        return FakeGmailClient(), FakeJinaClient(), FakeGenerateRunner()
 
     monkeypatch.setattr(cli_mod, "build_stores", fake_build)
     monkeypatch.setattr(cli_mod, "build_clients", fake_clients)

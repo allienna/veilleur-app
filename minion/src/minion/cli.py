@@ -13,6 +13,7 @@ from datetime import datetime
 import click
 
 from minion.clock import Clock, SystemClock
+from minion.generate.ports import GenerateRunner
 from minion.ingest.ports import GmailClient, JinaClient
 from minion.logging import configure_logging
 from minion.models import RunStatus
@@ -46,12 +47,13 @@ def build_stores(clock: Clock) -> tuple[RunStore, LockStore]:
     return FirestoreRunStore(client), FirestoreLockStore(client, clock)
 
 
-def build_clients() -> tuple[GmailClient, JinaClient]:
-    """Construct the production ingestion clients (lazy import — Gmail needs the secret)."""
+def build_clients() -> tuple[GmailClient, JinaClient, GenerateRunner]:
+    """Construct the production ingestion + generation clients (lazy import — need secrets)."""
+    from minion.generate.runner import ClaudeGenerateRunner
     from minion.ingest.gmail import GmailReaderClient
     from minion.ingest.jina import JinaReaderClient
 
-    return GmailReaderClient(), JinaReaderClient()
+    return GmailReaderClient(), JinaReaderClient(), ClaudeGenerateRunner()
 
 
 @click.group()
@@ -72,8 +74,8 @@ def run(date: str | None) -> None:
     clock = SystemClock()
     target = date or clock.now().strftime("%Y-%m-%d")
     run_store, lock_store = build_stores(clock)
-    gmail_client, jina_client = build_clients()
-    steps = build_pipeline(gmail_client, jina_client)
+    gmail_client, jina_client, generate_runner = build_clients()
+    steps = build_pipeline(gmail_client, jina_client, generate_runner)
     result = run_pipeline(
         target, run_store=run_store, lock_store=lock_store, clock=clock, steps=steps
     )
