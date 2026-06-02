@@ -11,7 +11,14 @@ from minion.generate.fakes import FakeGenerateRunner
 from minion.generate.ports import GenerateRunner
 from minion.ingest.fakes import FakeGmailClient, FakeJinaClient
 from minion.ingest.ports import GmailClient, JinaClient
-from minion.store.memory import InMemoryLockStore, InMemoryRunStore
+from minion.publish.fakes import (
+    FakeContentRepository,
+    FakeImageGenerator,
+    FakePromptRewriter,
+)
+from minion.publish.ports import ContentRepository, ImageGenerator, PromptRewriter
+from minion.store.memory import InMemoryArticleStore, InMemoryLockStore, InMemoryRunStore
+from minion.store.ports import ArticleStore
 
 
 def test_calendar_invalid_date_exits_nonzero() -> None:
@@ -32,12 +39,21 @@ def test_non_padded_date_rejected() -> None:
 
 
 def test_wired_run_exits_zero(monkeypatch) -> None:  # type: ignore[no-untyped-def]
-    def fake_build(clock: Clock) -> tuple[InMemoryRunStore, InMemoryLockStore]:
-        return InMemoryRunStore(), InMemoryLockStore(clock)
+    def fake_build(clock: Clock) -> tuple[InMemoryRunStore, InMemoryLockStore, ArticleStore]:
+        return InMemoryRunStore(), InMemoryLockStore(clock), InMemoryArticleStore()
 
-    def fake_clients() -> tuple[GmailClient, JinaClient, GenerateRunner]:
-        # Empty mailbox → run skips at validate_input, before generate.
-        return FakeGmailClient(), FakeJinaClient(), FakeGenerateRunner()
+    def fake_clients() -> tuple[
+        GmailClient, JinaClient, GenerateRunner, ImageGenerator, PromptRewriter, ContentRepository
+    ]:
+        # Empty mailbox → run skips at validate_input, before generate/imagen/github/publish.
+        return (
+            FakeGmailClient(),
+            FakeJinaClient(),
+            FakeGenerateRunner(),
+            FakeImageGenerator(),
+            FakePromptRewriter(),
+            FakeContentRepository(),
+        )
 
     monkeypatch.setattr(cli_mod, "build_stores", fake_build)
     monkeypatch.setattr(cli_mod, "build_clients", fake_clients)

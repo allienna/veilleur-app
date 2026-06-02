@@ -60,6 +60,7 @@ Decomposes the PRD into vertically-sliced features ordered by dependency. Each f
 **Delivers**: First fully-autonomous local run produces a real published article on the public Astro site.
 **Surfaces**: `minion`, writes to external `astro-site`
 **Estimated size**: M
+**Status**: In Progress
 
 ### F-007: Cloud Run deployment + Cloud Scheduler + kill-switch
 **Summary**: Multi-stage Dockerfile (Python 3.12 + Node 20 + git + `@anthropic-ai/claude-code`). Terraform (or gcloud scripts) for: Cloud Run Job, Cloud Scheduler cron at 06:00 Europe/Paris, service accounts, IAM bindings, Firestore + Vertex enablement. Budget kill-switch: Cloud Billing → Pub/Sub → Cloud Function disabling Scheduler at 100% of 30€/mo cap.

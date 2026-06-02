@@ -40,11 +40,18 @@ class StepResult:
     finalizes the run with that status and `reason`, marks this step success, and halts the
     remaining steps — distinct from raising, which is a failure. `validate_input` uses
     `terminal_status=RunStatus.skipped, reason="no_sources"` for an empty mailbox (FR-4).
+
+    `warning` lets a step finish normally (the pipeline continues) yet downgrade the *final*
+    run status to `success_with_warnings` (F-006 plan AD-4). The orchestrator latches the first
+    warning reason; it never overrides a later `failure` or a graceful `terminal_status`. The
+    `imagen` placeholder fallback (PRD §6 R2) is the first producer. The per-step Firestore
+    record stays `success` — the warning is run-level.
     """
 
     payload: dict[str, object] = field(default_factory=_empty_bag)
     terminal_status: RunStatus | None = None
     reason: str | None = None
+    warning: str | None = None
 
 
 class Step(Protocol):

@@ -19,7 +19,13 @@ from minion.ingest.fakes import FakeGmailClient, FakeJinaClient
 from minion.ingest.models import Newsletter, ScrapedSource, SourceOutcome
 from minion.models import Run, RunStatus
 from minion.orchestrator import run_pipeline
+from minion.publish.fakes import (
+    FakeContentRepository,
+    FakeImageGenerator,
+    FakePromptRewriter,
+)
 from minion.steps import build_pipeline
+from minion.store.memory import InMemoryArticleStore
 
 DATE = "2026-06-01"
 T0 = datetime(2026, 6, 1, 6, 0, tzinfo=PARIS_TZ)
@@ -51,7 +57,15 @@ def _jina_with_outcomes(
 
 def _run(gmail: FakeGmailClient, jina: FakeJinaClient, run_store, lock_store, clock) -> Run:
     runner = FakeGenerateRunner(outputs=[_VALID_ARTIFACT])
-    steps = build_pipeline(gmail, jina, runner)
+    steps = build_pipeline(
+        gmail,
+        jina,
+        runner,
+        FakeImageGenerator(outcomes=[b"IMG"]),
+        FakePromptRewriter(),
+        FakeContentRepository(),
+        InMemoryArticleStore(),
+    )
     return run_pipeline(DATE, run_store=run_store, lock_store=lock_store, clock=clock, steps=steps)
 
 

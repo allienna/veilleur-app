@@ -18,8 +18,9 @@ from minion.ingest.ports import GmailClient, JinaClient
 from minion.logging import configure_logging
 from minion.models import RunStatus
 from minion.orchestrator import run_pipeline
+from minion.publish.ports import ContentRepository, ImageGenerator, PromptRewriter
 from minion.steps import build_pipeline
-from minion.store.ports import LockStore, RunStore
+from minion.store.ports import ArticleStore, LockStore, RunStore
 
 _DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
@@ -37,23 +38,42 @@ def _validate_date(ctx: click.Context, param: click.Parameter, value: str | None
     return value
 
 
-def build_stores(clock: Clock) -> tuple[RunStore, LockStore]:
+def build_stores(clock: Clock) -> tuple[RunStore, LockStore, ArticleStore]:
     """Construct the production Firestore-backed stores (lazy import — needs GCP creds)."""
     from google.cloud import firestore
 
-    from minion.store.firestore import FirestoreLockStore, FirestoreRunStore
+    from minion.store.firestore import (
+        FirestoreArticleStore,
+        FirestoreLockStore,
+        FirestoreRunStore,
+    )
 
     client = firestore.Client()
-    return FirestoreRunStore(client), FirestoreLockStore(client, clock)
+    return (
+        FirestoreRunStore(client),
+        FirestoreLockStore(client, clock),
+        FirestoreArticleStore(client),
+    )
 
 
-def build_clients() -> tuple[GmailClient, JinaClient, GenerateRunner]:
-    """Construct the production ingestion + generation clients (lazy import — need secrets)."""
+def build_clients() -> tuple[
+    GmailClient, JinaClient, GenerateRunner, ImageGenerator, PromptRewriter, ContentRepository
+]:
+    """Construct the production ingestion / generation / publishing clients (lazy — needs creds)."""
     from minion.generate.runner import ClaudeGenerateRunner
     from minion.ingest.gmail import GmailReaderClient
     from minion.ingest.jina import JinaReaderClient
+    from minion.publish.github import GitHubContentRepository
+    from minion.publish.imagen import ClaudePromptRewriter, VertexImageGenerator
 
-    return GmailReaderClient(), JinaReaderClient(), ClaudeGenerateRunner()
+    return (
+        GmailReaderClient(),
+        JinaReaderClient(),
+        ClaudeGenerateRunner(),
+        VertexImageGenerator(),
+        ClaudePromptRewriter(),
+        GitHubContentRepository(),
+    )
 
 
 @click.group()
@@ -73,9 +93,19 @@ def run(date: str | None) -> None:
     configure_logging()
     clock = SystemClock()
     target = date or clock.now().strftime("%Y-%m-%d")
-    run_store, lock_store = build_stores(clock)
-    gmail_client, jina_client, generate_runner = build_clients()
-    steps = build_pipeline(gmail_client, jina_client, generate_runner)
+    run_store, lock_store, article_store = build_stores(clock)
+    gmail_client, jina_client, generate_runner, image_generator, prompt_rewriter, content_repo = (
+        build_clients()
+    )
+    steps = build_pipeline(
+        gmail_client,
+        jina_client,
+        generate_runner,
+        image_generator,
+        prompt_rewriter,
+        content_repo,
+        article_store,
+    )
     result = run_pipeline(
         target, run_store=run_store, lock_store=lock_store, clock=clock, steps=steps
     )
