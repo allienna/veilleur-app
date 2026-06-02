@@ -69,6 +69,22 @@ def test_rejection_then_rewrite_succeeds() -> None:
     assert gen.prompts[1].startswith("softened: ")  # the rewritten prompt was used
 
 
+def test_rewrite_failure_falls_back_to_placeholder() -> None:
+    # The rewrite itself blows up (e.g. missing OAuth token / `claude` not installed); the step
+    # must treat it as best-effort and still produce the placeholder, never propagate (FR-2).
+    class BoomRewriter:
+        def soften(self, prompt: str, reason: str) -> str:
+            raise RuntimeError("no OAuth token")
+
+    gen = FakeImageGenerator(outcomes=[ImagenBlockedError("blocked")])
+    result = ImagenStep(image_generator=gen, prompt_rewriter=BoomRewriter()).run(
+        _ctx(article=_article())
+    )
+    image = result.payload["image"]
+    assert isinstance(image, ImageArtifact) and image.placeholder is True
+    assert result.warning == config.IMAGEN_FALLBACK_WARNING
+
+
 def test_rejection_exhausted_falls_back_to_placeholder_with_warning() -> None:
     gen = FakeImageGenerator(
         outcomes=[ImagenBlockedError("blocked"), ImagenBlockedError("still blocked")]

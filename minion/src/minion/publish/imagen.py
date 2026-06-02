@@ -57,18 +57,23 @@ class VertexImageGenerator:
         return self._client
 
     def generate(self, prompt: str) -> bytes:
-        response = self._get_client().models.generate_images(
-            model=config.IMAGEN_MODEL,
-            prompt=prompt,
-            config=GenerateImagesConfig(
-                aspect_ratio=config.IMAGEN_ASPECT_RATIO, number_of_images=1
-            ),
-        )
-        images = response.generated_images
-        if images:
-            image_obj = images[0].image
-            if image_obj is not None and image_obj.image_bytes:
-                return _convert_to_webp(image_obj.image_bytes)
+        try:
+            response = self._get_client().models.generate_images(
+                model=config.IMAGEN_MODEL,
+                prompt=prompt,
+                config=GenerateImagesConfig(
+                    aspect_ratio=config.IMAGEN_ASPECT_RATIO, number_of_images=1
+                ),
+            )
+            images = response.generated_images
+            if images:
+                image_obj = images[0].image
+                if image_obj is not None and image_obj.image_bytes:
+                    return _convert_to_webp(image_obj.image_bytes)
+        except Exception as exc:
+            # Auth / quota / 5xx / network / Pillow decode — surface as ImagenBlockedError so the
+            # step follows the rewrite/placeholder fallback rather than hard-failing the run (FR-2).
+            raise ImagenBlockedError(f"Imagen generation failed: {exc}") from exc
         raise ImagenBlockedError("Imagen returned no usable image (safety filter, empty, or quota)")
 
 

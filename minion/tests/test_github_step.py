@@ -47,20 +47,21 @@ def _step(repo: FakeContentRepository, store: InMemoryArticleStore) -> GithubSte
     return GithubStep(content_repo=repo, article_store=store, sleep=lambda _s: None)
 
 
-def test_commits_markdown_and_image_to_configured_paths() -> None:
+def test_commits_image_then_markdown_to_configured_paths() -> None:
     repo, store = FakeContentRepository(), InMemoryArticleStore()
     result = _step(repo, store).run(_ctx(**_bag()))
 
-    paths = [c.path for c in repo.calls]
-    assert paths == [
-        f"site/src/content/posts/{DATE}-hello-world.md",
-        f"site/public/images/posts/{DATE}.webp",
-    ]
+    md_path = f"site/src/content/posts/{DATE}-hello-world.md"
+    image_path = f"site/public/images/posts/{DATE}.webp"
+    # Image is committed first so a post never references a missing hero image (partial publish).
+    assert [c.path for c in repo.calls] == [image_path, md_path]
     commits = result.payload["commits"]
     assert isinstance(commits, list) and all(isinstance(c, CommitResult) for c in commits)
-    assert result.payload["commit_sha"] == commits[0].sha  # the markdown commit SHA
+    by_path = {c.path: c.sha for c in commits}
+    assert result.payload["commit_sha"] == by_path[md_path]  # the article (markdown) commit SHA
     # The markdown body carries the serialized frontmatter + body.
-    assert b'title: "Hello World"' in repo.calls[0].content
+    committed = {c.path: c.content for c in repo.calls}
+    assert b'title: "Hello World"' in committed[md_path]
 
 
 def test_persists_recoverable_article_before_commit() -> None:
@@ -87,9 +88,9 @@ def test_retries_then_succeeds() -> None:
     repo = FakeContentRepository(fail_times=2)  # first two puts fail, third succeeds
     store = InMemoryArticleStore()
     result = _step(repo, store).run(_ctx(**_bag()))
-    # md: calls 1,2 fail then 3 succeeds; image: call 4 succeeds.
+    # image: calls 1,2 fail then 3 succeeds; md: call 4 succeeds. commit_sha is the md (4th) SHA.
     assert len(repo.calls) == 4
-    assert result.payload["commit_sha"] == "sha-3"
+    assert result.payload["commit_sha"] == "sha-4"
 
 
 def test_retries_exhausted_hard_fails_with_article_already_persisted() -> None:

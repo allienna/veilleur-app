@@ -29,8 +29,10 @@ _API_BASE = "https://api.github.com"
 class GitHubContentRepository:
     """Commits single files to `{owner}/{repo}@{branch}` via the Contents API."""
 
-    def __init__(self) -> None:
-        self._timeout = httpx.Timeout(config.GITHUB_TIMEOUT.total_seconds())
+    def __init__(self, client: httpx.Client | None = None) -> None:
+        # Reuse one client per run for connection pooling (mirrors JinaReaderClient); the GET+PUT
+        # pair per commit then shares the same TLS connection. Injectable for tests.
+        self._client = client or httpx.Client(timeout=config.GITHUB_TIMEOUT.total_seconds())
 
     def _headers(self) -> dict[str, str]:
         pat = secrets.require(config.GITHUB_PAT_SECRET)
@@ -48,11 +50,10 @@ class GitHubContentRepository:
 
     def _existing_sha(self, path: str, headers: dict[str, str]) -> str | None:
         try:
-            response = httpx.get(
+            response = self._client.get(
                 self._contents_url(path),
                 headers=headers,
                 params={"ref": config.GITHUB_BRANCH},
-                timeout=self._timeout,
             )
         except httpx.HTTPError as exc:
             raise ContentRepoError(f"GitHub GET {path} failed: {exc}") from exc
@@ -75,9 +76,7 @@ class GitHubContentRepository:
         if existing_sha is not None:  # update-with-sha → idempotent overwrite
             payload["sha"] = existing_sha
         try:
-            response = httpx.put(
-                self._contents_url(path), headers=headers, json=payload, timeout=self._timeout
-            )
+            response = self._client.put(self._contents_url(path), headers=headers, json=payload)
         except httpx.HTTPError as exc:
             raise ContentRepoError(f"GitHub PUT {path} failed: {exc}") from exc
         if response.is_error:

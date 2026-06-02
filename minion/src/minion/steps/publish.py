@@ -64,14 +64,19 @@ class ImagenStep:
             reason = str(exc)
             ctx.log.warning("imagen rejected prompt", extra={"reason": reason})
         for attempt in range(config.IMAGEN_RETRIES):
-            prompt = self.prompt_rewriter.soften(prompt, reason)
             try:
+                prompt = self.prompt_rewriter.soften(prompt, reason)
                 image = self.image_generator.generate(prompt)
                 ctx.log.info("imagen succeeded after rewrite", extra={"attempt": attempt + 1})
                 return image, False
             except ImagenBlockedError as exc:
                 reason = str(exc)
                 ctx.log.warning("imagen rejected rewrite", extra={"attempt": attempt + 1})
+            except Exception:
+                # The rewrite itself failed (no OAuth token, `claude` missing, subprocess error).
+                # It is best-effort (FR-2) — skip straight to the placeholder, never hard-fail.
+                ctx.log.warning("prompt rewrite failed; falling back to placeholder")
+                break
         ctx.log.warning("imagen falling back to placeholder", extra={"reason": reason})
         return _load_placeholder(), True
 
@@ -138,17 +143,19 @@ class GithubStep:
         md_path = config.POST_MD_PATH_TEMPLATE.format(date=ctx.date, slug=slug)
         image_path = config.POST_IMAGE_PATH_TEMPLATE.format(date=ctx.date)
         message = f"feat(veilleur): publish {ctx.date} article"
-        md_sha = self._commit_with_retry(md_path, render_post(article).encode("utf-8"), message)
+        # Commit the image BEFORE the markdown: an image-only commit is harmless, whereas a post
+        # referencing a missing hero image is broken — minimizes a visible partial publish.
         image_sha = self._commit_with_retry(image_path, image.webp, message)
+        md_sha = self._commit_with_retry(md_path, render_post(article).encode("utf-8"), message)
 
         ctx.log.info("article committed", extra={"slug": slug})
         return StepResult(
             payload={
                 "commits": [
-                    CommitResult(path=md_path, sha=md_sha),
                     CommitResult(path=image_path, sha=image_sha),
+                    CommitResult(path=md_path, sha=md_sha),
                 ],
-                "commit_sha": md_sha,
+                "commit_sha": md_sha,  # the article (markdown) commit is the published-doc SHA
                 "slug": slug,
             }
         )
