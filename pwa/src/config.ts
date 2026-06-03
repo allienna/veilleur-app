@@ -13,6 +13,11 @@ export const ASTRO_IMAGES_BASE = "https://allienna.github.io/veilleur/images/pos
 // boundary is the trigger-api JWT verification. Per-env via VITE_TRIGGER_API_URL (pwa/.env.example).
 export const TRIGGER_API_URL = import.meta.env.VITE_TRIGGER_API_URL;
 
+// VAPID application-server public key for Web Push subscription (F-012 FR-1). Non-secret
+// (it's the public half of the keypair); the private half lives in Secret Manager and the
+// Minion signs payloads with it. Per-env via VITE_VAPID_PUBLIC_KEY (pwa/.env.example).
+export const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY;
+
 // Firebase web config (non-secret, single prod project) from VITE_FIREBASE_* env vars
 // (F-009 Q3; documented in pwa/.env.example). import.meta.env is statically replaced at build.
 export const FIREBASE_CONFIG = {

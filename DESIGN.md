@@ -1,6 +1,6 @@
 # Veilleur-app — Design System
 
-**Last updated**: 2026-05-19
+**Last updated**: 2026-06-03
 **Status**: Living document
 **Surfaces covered**: `pwa` (primary), `astro-site` (external, token-aligned), `minion` (logs only)
 
@@ -151,7 +151,7 @@ Dark mode: same values but `rgb(0 0 0 / 0.40)` opacity.
 | `ShareSheet` | iOS bottom sheet with "Copier le post" + "Enregistrer l'image" actions | open, copying, copied, saving, saved, error | `Sheet` |
 | `RunNowButton` | Primary trigger CTA on Today view | idle, loading, disabled (run in progress), error | `Button` |
 
-### Standard (12)
+### Standard (13)
 
 | Component | Purpose | Shadcn base |
 |---|---|---|
@@ -167,6 +167,7 @@ Dark mode: same values but `rgb(0 0 0 / 0.40)` opacity.
 | `RunStepRow` | One row of the timeline: step name + duration + status dot | custom |
 | `SignInScreen` | Google sign-in landing (gates the PWA) | `Card` + `Button` |
 | `UnauthorizedScreen` | "Non autorisé" terminal screen for non-allowed emails | `Card` |
+| `NotificationOptIn` | Push-notification enable/disable control: requests permission, subscribes, reflects state (F-012). On iOS surfaces the home-screen-install prerequisite. | `Button` (+ `Toast`) |
 
 ### Forbidden
 
@@ -229,12 +230,14 @@ No UI. Structured JSON logs only (`runId`, `step`, `level`). No ANSI color; Clou
 - **Copy LinkedIn post** → `Toast.success` "Post copié", 2s duration.
 - **Save image** → `Toast.success` "Image enregistrée", 2s duration. On iOS where the Share API is required, the OS sheet replaces the toast.
 - **Run completes** while PWA is open → no toast (would obscure article); the `RunTimeline` last row turning emerald is the confirmation. Push notif handles the "PWA closed" case.
+- **Notifications enabled** (`NotificationOptIn` → permission granted + subscribed) → `Toast.success` "Notifications activées", 2s. Disable → `Toast.success` "Notifications désactivées", 2s.
 - **No celebratory animations.** Mood = calm.
 
 ### Offline / Degraded
 - **Service-worker-cached read**: last-known article remains visible offline; `ErrorBanner` (info variant) "Mode hors ligne — article du <date>". History list is cached for the last 7 entries.
 - **Firestore unreachable**: read from SW cache; `RunNowButton` disabled with tooltip-replacement caption "Connexion requise".
 - **Push subscription expired**: silent retry on next PWA open; no UI flag (operator doesn't need to know).
+- **Notification permission denied** (`NotificationOptIn`): inline guidance text, never a banner or icon-only control. On iOS reminds the home-screen-install prerequisite (iOS 16.4+). No subscription created; the control stays in its not-subscribed state.
 
 ## 5. Accessibility Baseline
 

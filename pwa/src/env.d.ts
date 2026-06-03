@@ -10,6 +10,8 @@ interface ImportMetaEnv {
   readonly VITE_FIREBASE_APP_ID: string;
   // trigger-api base URL for the manual "Run now" call (F-011 FR-E1). See pwa/.env.example.
   readonly VITE_TRIGGER_API_URL: string;
+  // VAPID application-server public key for Web Push (F-012 FR-1). Non-secret. See pwa/.env.example.
+  readonly VITE_VAPID_PUBLIC_KEY: string;
 }
 
 interface ImportMeta {

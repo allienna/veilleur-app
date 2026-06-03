@@ -5,7 +5,9 @@ These replace the F-003 stub bodies for the final three pipeline slots. Data bag
 - `github`  -> reads `article` + `image`; persists the recoverable `ArticleDoc` (FR-6), commits md +
                image, writes `commit_sha` + `slug`
 - `publish` -> reads `article` + `commit_sha`; upserts the final reader doc (`published=True`).
-               Web push is deferred to F-012.
+
+Run-completion Web Push (F-012) is sent by the orchestrator after finalize, not here: `publish`
+runs only on the full-success path, so it can't notify on a failed or skipped run (F-012 AD-1).
 
 The Imagen moderation fallback (FR-2) is the sole producer of `success_with_warnings` (plan AD-4):
 on a rejection the step rewrites the prompt once, then falls back to the bundled placeholder and
@@ -164,7 +166,8 @@ class GithubStep:
 
 @dataclass
 class PublishStep:
-    """Step 9: upsert the final reader doc (`published=True`); web push deferred to F-012 (FR-5)."""
+    """Step 9: upsert the final reader doc (`published=True`). Success-path persistence only —
+    run-completion Web Push is sent by the orchestrator after finalize (F-012 AD-1)."""
 
     article_store: ArticleStore
     name: StepName = StepName.publish
@@ -192,5 +195,5 @@ class PublishStep:
             published=True,
         )
         self.article_store.put_article(ctx.date, doc)
-        ctx.log.info("article persisted; web push deferred (F-012)")
+        ctx.log.info("article persisted")
         return StepResult()

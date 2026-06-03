@@ -40,6 +40,18 @@ importers:
       tailwind-merge:
         specifier: 3.6.0
         version: 3.6.0
+      workbox-expiration:
+        specifier: 7.4.1
+        version: 7.4.1
+      workbox-precaching:
+        specifier: 7.4.1
+        version: 7.4.1
+      workbox-routing:
+        specifier: 7.4.1
+        version: 7.4.1
+      workbox-strategies:
+        specifier: 7.4.1
+        version: 7.4.1
     devDependencies:
       '@eslint/js':
         specifier: 9.15.0

@@ -9,10 +9,13 @@ from __future__ import annotations
 
 from datetime import datetime
 
+from veilleur_shared.push_subscription import PushSubscription
+
 from minion.clock import Clock
 from minion.config import RUN_TIMEOUT, STEP_ORDER
 from minion.models import Lock, Run, RunStatus, RunStep, StepName
 from minion.publish.models import ArticleDoc
+from minion.store.ports import StoredSubscription
 
 
 class InMemoryRunStore:
@@ -81,6 +84,22 @@ class InMemoryArticleStore:
 
     def get_article(self, date: str) -> ArticleDoc | None:
         return self._articles.get(date)
+
+
+class InMemorySubscriptionStore:
+    """Subscription store backed by a dict keyed by document id (sha256(endpoint))."""
+
+    def __init__(self, items: dict[str, PushSubscription] | None = None) -> None:
+        self._subs: dict[str, PushSubscription] = dict(items or {})
+
+    def add(self, subscription_id: str, sub: PushSubscription) -> None:
+        self._subs[subscription_id] = sub
+
+    def list_subscriptions(self) -> list[StoredSubscription]:
+        return [StoredSubscription(id=sid, data=sub) for sid, sub in self._subs.items()]
+
+    def delete(self, subscription_id: str) -> None:
+        self._subs.pop(subscription_id, None)
 
 
 class InMemoryLockStore:

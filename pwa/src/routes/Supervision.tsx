@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 
 import { EmptyState } from "@/components/EmptyState";
 import { ErrorBanner } from "@/components/ErrorBanner";
+import { NotificationOptIn } from "@/components/NotificationOptIn";
 import { SkeletonCard } from "@/components/SkeletonCard";
 import { StatusPill } from "@/components/StatusPill";
 import { Card, CardContent } from "@/components/ui/card";
@@ -35,7 +36,10 @@ export default function Supervision(): JSX.Element {
 
   return (
     <div className="mx-auto max-w-5xl">
-      <h1 className="mb-lg text-h1 font-display text-fg">Supervision</h1>
+      <div className="mb-lg flex flex-wrap items-center justify-between gap-md">
+        <h1 className="text-h1 font-display text-fg">Supervision</h1>
+        <NotificationOptIn />
+      </div>
       <ul className="grid gap-sm">
         {state.data.map((run) => (
           <li key={run.date}>

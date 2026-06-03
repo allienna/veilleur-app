@@ -114,6 +114,7 @@ Decomposes the PRD into vertically-sliced features ordered by dependency. Each f
 **Delivers**: iPhone push notification fires on run completion. **Operator's daily ritual is fully closed-loop.**
 **Surfaces**: `pwa` (subscriber) + `minion` (sender)
 **Estimated size**: M
+**Status**: Complete (reviewed Ready to merge; AC-10 device delivery deferred to F-013)
 
 ### F-013: Hardening + 7-day burn-in + demo prep
 **Summary**: 7 consecutive successful daily runs verified (M8). Re-auth runbook for Gmail/Anthropic OAuth. Backup demo video recorded (M10 = J-2). README polished as architectural exemplar. Sanity pass on git history, `specs/`, `CLAUDE.md` — the repo must defend itself as a spec-coding artefact (FR-G1 narrative side).

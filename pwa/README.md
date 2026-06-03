@@ -4,9 +4,9 @@ The Veilleur PWA — the operator's reading + (later) supervision surface. React
 Vite + Tailwind + `vite-plugin-pwa`, reading published articles from Firestore behind
 Firebase Auth.
 
-Scope as of **F-009**: app shell, Google sign-in (mono-tenant gate), and the reading
-surface (Today + History + full article). Supervision, manual trigger, LinkedIn share, and
-push notifications land in F-010 → F-012.
+Scope as of **F-012**: app shell, Google sign-in (mono-tenant gate), the reading surface
+(Today + History + full article), supervision + manual trigger, LinkedIn share, and Web Push
+notifications.
 
 ## Develop
 
@@ -33,6 +33,34 @@ env vars — see [`.env.example`](.env.example). `import.meta.env` statically re
 build time. The allowed-operator email and the Astro hero-image base URL live in
 [`src/config.ts`](src/config.ts); the email constant is one of the three pinned locations
 enforced by `pnpm check:email` (see root `CLAUDE.md`).
+
+## Push notifications (F-012)
+
+Web Push uses a single VAPID keypair (application-server identity, RFC 8292). Generate it
+**once**, then store the halves in two places — never commit either key:
+
+```bash
+# Generate a VAPID keypair (any of these works; web-push is the simplest):
+npx web-push generate-vapid-keys
+#   → Public Key:  B....   (87 chars, base64url)  — non-secret
+#   → Private Key: ....                            — SECRET
+```
+
+- **Public key** → `VITE_VAPID_PUBLIC_KEY` in `pwa/.env.local` (and the CI/deploy env). Non-secret;
+  shipped into the bundle, used by `PushManager.subscribe` (see [`.env.example`](.env.example)).
+- **Private key** → Secret Manager secret `vapid-private-key` (the Minion signs payloads with it;
+  IAM access granted in `infra/iam.tf`). Add a version with:
+  ```bash
+  printf %s "<private-key>" | gcloud secrets versions add vapid-private-key --data-file=-
+  ```
+
+**iOS prerequisite (R8/R11):** Web Push only works on iOS 16.4+ **after the PWA is installed to the
+home screen**. Before install the `PushManager` API is absent — the `NotificationOptIn` control
+(on the Supervision view) surfaces this as inline guidance. End-to-end delivery is verified on a
+real iPhone in **F-013** (AC-10); never simulate iOS push in Chrome DevTools.
+
+The service worker is custom (`src/sw.ts`, `injectManifest` strategy) so it can host the `push` /
+`notificationclick` handlers; its push logic is unit-tested in `src/lib/pushHandlers.test.ts`.
 
 ## Auth & authorization
 

@@ -7,7 +7,7 @@ import {
   initializeTestEnvironment,
   type RulesTestEnvironment,
 } from "@firebase/rules-unit-testing";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { deleteDoc, doc, getDoc, setDoc } from "firebase/firestore";
 import { afterAll, beforeAll, describe, it } from "vitest";
 
 import { ALLOWED_OPERATOR_EMAIL } from "@/config";
@@ -35,6 +35,20 @@ beforeAll(async () => {
     await setDoc(doc(ctx.firestore(), "runs", "2026-06-01", "steps", "gmail"), {
       name: "gmail",
       status: "success",
+    });
+    // F-012: seed a subscription owned by the allowed operator and one owned by someone else,
+    // so the ownership-scoped read/delete rules can be exercised.
+    await setDoc(doc(ctx.firestore(), "pushSubscriptions", "own"), {
+      endpoint: "https://push.example/own",
+      keys: { p256dh: "p", auth: "a" },
+      operatorEmail: ALLOWED_OPERATOR_EMAIL,
+      createdAt: "2026-06-01T00:00:00.000Z",
+    });
+    await setDoc(doc(ctx.firestore(), "pushSubscriptions", "other"), {
+      endpoint: "https://push.example/other",
+      keys: { p256dh: "p", auth: "a" },
+      operatorEmail: "intruder@example.com",
+      createdAt: "2026-06-01T00:00:00.000Z",
     });
   });
 });
@@ -118,5 +132,59 @@ describe("firestore.rules — runs", () => {
     await assertFails(
       setDoc(doc(db, "runs", "2026-06-01", "steps", "jina"), { name: "jina", status: "running" }),
     );
+  });
+});
+
+// F-012 FR-3/AD-5: `pushSubscriptions/{id}` is the first client-writable collection. The allowed,
+// verified operator may create/read/update/delete only docs whose `operatorEmail` is the allowed
+// email; everyone else (and the operator on a doc claiming another owner) is denied.
+describe("firestore.rules — pushSubscriptions", () => {
+  const ownDoc = (over: Record<string, unknown> = {}) => ({
+    endpoint: "https://push.example/new",
+    keys: { p256dh: "p", auth: "a" },
+    operatorEmail: ALLOWED_OPERATOR_EMAIL,
+    createdAt: "2026-06-03T00:00:00.000Z",
+    ...over,
+  });
+
+  it("allows the operator to create a subscription it owns", async () => {
+    const db = ctxFor(ALLOWED_OPERATOR_EMAIL, true).firestore();
+    await assertSucceeds(setDoc(doc(db, "pushSubscriptions", "create-own"), ownDoc()));
+  });
+
+  it("denies creating a subscription claiming another owner", async () => {
+    const db = ctxFor(ALLOWED_OPERATOR_EMAIL, true).firestore();
+    await assertFails(
+      setDoc(doc(db, "pushSubscriptions", "create-spoof"), ownDoc({ operatorEmail: "intruder@example.com" })),
+    );
+  });
+
+  it("denies a non-allowed email from creating any subscription", async () => {
+    const db = ctxFor("intruder@example.com", true).firestore();
+    await assertFails(
+      setDoc(doc(db, "pushSubscriptions", "intruder-doc"), ownDoc({ operatorEmail: "intruder@example.com" })),
+    );
+  });
+
+  it("denies the allowed email when unverified", async () => {
+    const db = ctxFor(ALLOWED_OPERATOR_EMAIL, false).firestore();
+    await assertFails(setDoc(doc(db, "pushSubscriptions", "unverified-doc"), ownDoc()));
+  });
+
+  it("denies an unauthenticated writer", async () => {
+    const db = ctxFor(null, false).firestore();
+    await assertFails(setDoc(doc(db, "pushSubscriptions", "anon-doc"), ownDoc()));
+  });
+
+  it("allows the operator to read and delete a subscription it owns", async () => {
+    const db = ctxFor(ALLOWED_OPERATOR_EMAIL, true).firestore();
+    await assertSucceeds(getDoc(doc(db, "pushSubscriptions", "own")));
+    await assertSucceeds(deleteDoc(doc(db, "pushSubscriptions", "own")));
+  });
+
+  it("denies reading or deleting a subscription owned by someone else", async () => {
+    const db = ctxFor(ALLOWED_OPERATOR_EMAIL, true).firestore();
+    await assertFails(getDoc(doc(db, "pushSubscriptions", "other")));
+    await assertFails(deleteDoc(doc(db, "pushSubscriptions", "other")));
   });
 });
