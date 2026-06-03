@@ -8,6 +8,11 @@ export const ALLOWED_OPERATOR_EMAIL = "aurelien.allienne@gmail.com"; // allowed-
 // (F-009 Q5). Resolved as `${ASTRO_IMAGES_BASE}/${article.image}`. Non-secret.
 export const ASTRO_IMAGES_BASE = "https://allienna.github.io/veilleur/images/posts";
 
+// trigger-api base URL for the manual "Run now" call (F-011 FR-E1). The PWA POSTs
+// `${TRIGGER_API_URL}/trigger` with the operator's Firebase ID token. Non-secret — the real
+// boundary is the trigger-api JWT verification. Per-env via VITE_TRIGGER_API_URL (pwa/.env.example).
+export const TRIGGER_API_URL = import.meta.env.VITE_TRIGGER_API_URL;
+
 // Firebase web config (non-secret, single prod project) from VITE_FIREBASE_* env vars
 // (F-009 Q3; documented in pwa/.env.example). import.meta.env is statically replaced at build.
 export const FIREBASE_CONFIG = {

@@ -78,4 +78,16 @@ class Run(BaseModel):
             description='Run-level failure or abort reason (e.g. "already_running"); null on success.'
         ),
     ] = None
+    costUsd: Annotated[
+        Optional[float],
+        Field(
+            description="Total LLM cost for the run in USD (the `claude` CLI's native unit, from `total_cost_usd`). Null when the run never reached the `generate` step (e.g. skipped/no_sources or an early failure)."
+        ),
+    ] = None
+    tokens: Annotated[
+        Optional[int],
+        Field(
+            description="Total LLM tokens (input + output) consumed by the `generate` step. Null when no generation ran (see `costUsd`)."
+        ),
+    ] = None
     steps: Annotated[List[RunStep], Field(description="Ordered per-step records.")]

@@ -8,6 +8,8 @@ interface ImportMetaEnv {
   readonly VITE_FIREBASE_STORAGE_BUCKET: string;
   readonly VITE_FIREBASE_MESSAGING_SENDER_ID: string;
   readonly VITE_FIREBASE_APP_ID: string;
+  // trigger-api base URL for the manual "Run now" call (F-011 FR-E1). See pwa/.env.example.
+  readonly VITE_TRIGGER_API_URL: string;
 }
 
 interface ImportMeta {

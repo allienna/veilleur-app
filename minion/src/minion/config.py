@@ -82,6 +82,10 @@ CLAUDE_CMD: tuple[str, ...] = (
     "/generate",
     "--permission-mode",
     "bypassPermissions",
+    # JSON envelope on stdout so the runner can read `total_cost_usd` + `usage` alongside the
+    # artefact `result` for the supervision cost/tokens display (F-011 AD-5).
+    "--output-format",
+    "json",
 )
 CLAUDE_TIMEOUT: timedelta = timedelta(minutes=8)  # PRD §4: ≤4 min target, 8 min ceiling
 CLAUDE_BACKOFF_BASE: timedelta = timedelta(seconds=2)  # transport-retry backoff unit

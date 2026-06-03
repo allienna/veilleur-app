@@ -55,9 +55,40 @@ def _capture(monkeypatch: pytest.MonkeyPatch, result: Any) -> dict[str, Any]:
     return captured
 
 
-def test_returns_stdout_on_success(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_unwraps_json_envelope_with_cost_and_tokens(monkeypatch: pytest.MonkeyPatch) -> None:
+    envelope = json.dumps(
+        {
+            "result": '{"theme":"ai"}',
+            "total_cost_usd": 0.42,
+            "usage": {"input_tokens": 1000, "output_tokens": 200},
+        }
+    )
+    _capture(monkeypatch, _Completed(returncode=0, stdout=envelope))
+    invocation = ClaudeGenerateRunner().invoke(CONTEXT, [])
+    assert invocation.text == '{"theme":"ai"}'
+    assert invocation.cost_usd == 0.42
+    assert invocation.tokens == 1200
+
+
+def test_falls_back_to_raw_text_without_envelope(monkeypatch: pytest.MonkeyPatch) -> None:
+    # Plain artefact JSON (no `result` key) — treated as the artefact text, no cost (AD-5 fallback).
     _capture(monkeypatch, _Completed(returncode=0, stdout='{"theme":"ai"}'))
-    assert ClaudeGenerateRunner().invoke(CONTEXT, []) == '{"theme":"ai"}'
+    invocation = ClaudeGenerateRunner().invoke(CONTEXT, [])
+    assert invocation.text == '{"theme":"ai"}'
+    assert invocation.cost_usd is None
+    assert invocation.tokens is None
+
+
+def test_non_numeric_cost_degrades_to_none(monkeypatch: pytest.MonkeyPatch) -> None:
+    # A non-numeric `total_cost_usd`/usage must degrade to null, never crash the runner (AD-5).
+    envelope = json.dumps(
+        {"result": "{}", "total_cost_usd": "oops", "usage": {"input_tokens": "x"}}
+    )
+    _capture(monkeypatch, _Completed(returncode=0, stdout=envelope))
+    invocation = ClaudeGenerateRunner().invoke(CONTEXT, [])
+    assert invocation.text == "{}"
+    assert invocation.cost_usd is None
+    assert invocation.tokens is None
 
 
 def test_argv_carries_generate_and_bypass_permissions(monkeypatch: pytest.MonkeyPatch) -> None:

@@ -33,6 +33,14 @@
       "type": ["string", "null"],
       "description": "Run-level failure or abort reason (e.g. \"already_running\"); null on success."
     },
+    "costUsd": {
+      "type": ["number", "null"],
+      "description": "Total LLM cost for the run in USD (the `claude` CLI's native unit, from `total_cost_usd`). Null when the run never reached the `generate` step (e.g. skipped/no_sources or an early failure)."
+    },
+    "tokens": {
+      "type": ["integer", "null"],
+      "description": "Total LLM tokens (input + output) consumed by the `generate` step. Null when no generation ran (see `costUsd`)."
+    },
     "steps": {
       "type": "array",
       "description": "Ordered per-step records.",

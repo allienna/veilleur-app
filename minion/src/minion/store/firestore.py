@@ -72,9 +72,23 @@ class FirestoreRunStore:
         )
 
     def finalize_run(
-        self, date: str, status: RunStatus, ended_at: datetime, error: str | None
+        self,
+        date: str,
+        status: RunStatus,
+        ended_at: datetime,
+        error: str | None,
+        cost_usd: float | None = None,
+        tokens: int | None = None,
     ) -> None:
-        self._run_ref(date).update({"status": status.value, "endedAt": ended_at, "error": error})
+        self._run_ref(date).update(
+            {
+                "status": status.value,
+                "endedAt": ended_at,
+                "error": error,
+                "costUsd": cost_usd,
+                "tokens": tokens,
+            }
+        )
 
     def get_run(self, date: str) -> Run | None:
         snapshot = self._run_ref(date).get()
@@ -100,6 +114,8 @@ class FirestoreRunStore:
             startedAt=doc.get("startedAt"),
             endedAt=doc.get("endedAt"),
             error=doc.get("error"),
+            costUsd=doc.get("costUsd"),
+            tokens=doc.get("tokens"),
             steps=steps,
         )
 

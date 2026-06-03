@@ -21,7 +21,21 @@ service cloud.firestore {
       allow write: if false;
     }
 
-    // Deny-by-default for every other collection. `runs/*` reads land in F-011.
+    // Run state the PWA supervises (F-011 FR-D1/FR-D2). Read-only for the allowed operator;
+    // client writes are always denied — only the Minion job's privileged service account writes
+    // runs, server-side, bypassing these rules. The `steps/{step}` subcollection (the per-step
+    // records the live timeline listens to) needs its own match to be readable.
+    match /runs/{date} {
+      allow read: if isAllowedOperator();
+      allow write: if false;
+
+      match /steps/{step} {
+        allow read: if isAllowedOperator();
+        allow write: if false;
+      }
+    }
+
+    // Deny-by-default for every other collection.
     match /{document=**} {
       allow read, write: if false;
     }

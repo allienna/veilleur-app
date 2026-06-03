@@ -36,12 +36,20 @@ class InMemoryRunStore:
         self._steps.setdefault(date, {})[step.name] = step
 
     def finalize_run(
-        self, date: str, status: RunStatus, ended_at: datetime, error: str | None
+        self,
+        date: str,
+        status: RunStatus,
+        ended_at: datetime,
+        error: str | None,
+        cost_usd: float | None = None,
+        tokens: int | None = None,
     ) -> None:
         doc = self._runs[date]
         doc["status"] = status
         doc["endedAt"] = ended_at
         doc["error"] = error
+        doc["costUsd"] = cost_usd
+        doc["tokens"] = tokens
 
     def get_run(self, date: str) -> Run | None:
         doc = self._runs.get(date)
@@ -56,6 +64,8 @@ class InMemoryRunStore:
             startedAt=doc["startedAt"],  # type: ignore[arg-type]
             endedAt=doc["endedAt"],  # type: ignore[arg-type]
             error=doc["error"],  # type: ignore[arg-type]
+            costUsd=doc.get("costUsd"),  # type: ignore[arg-type]
+            tokens=doc.get("tokens"),  # type: ignore[arg-type]
             steps=steps,
         )
 
