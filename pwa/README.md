@@ -8,6 +8,10 @@ Scope as of **F-012**: app shell, Google sign-in (mono-tenant gate), the reading
 (Today + History + full article), supervision + manual trigger, LinkedIn share, and Web Push
 notifications.
 
+See the [top-level README](../README.md) for the whole Veilleur system and the spec-driven
+narrative. When a run fails on an auth error, the supervision `ErrorBanner` links the operator to
+the Gmail re-auth runbook in [`infra/RUNBOOK.md` §3](../infra/RUNBOOK.md#3-oauth-re-auth-gmail--anthropic--prd-r3).
+
 ## Develop
 
 ```bash

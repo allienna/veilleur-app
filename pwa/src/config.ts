@@ -13,6 +13,12 @@ export const ASTRO_IMAGES_BASE = "https://allienna.github.io/veilleur/images/pos
 // boundary is the trigger-api JWT verification. Per-env via VITE_TRIGGER_API_URL (pwa/.env.example).
 export const TRIGGER_API_URL = import.meta.env.VITE_TRIGGER_API_URL;
 
+// Deep link to the operator OAuth re-auth runbook (infra/RUNBOOK.md §3). Surfaced by the
+// supervision ErrorBanner when a run fails on an auth error so the operator can recover Gmail /
+// Anthropic credentials without hunting for the procedure (F-013 FR-1). Non-secret.
+export const REAUTH_RUNBOOK_URL =
+  "https://github.com/allienna/veilleur-app/blob/main/infra/RUNBOOK.md#3-oauth-re-auth-gmail--anthropic--prd-r3";
+
 // VAPID application-server public key for Web Push subscription (F-012 FR-1). Non-secret
 // (it's the public half of the keypair); the private half lives in Secret Manager and the
 // Minion signs payloads with it. Per-env via VITE_VAPID_PUBLIC_KEY (pwa/.env.example).

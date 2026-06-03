@@ -102,7 +102,8 @@ MAX_LINKEDIN_CHARS: int = 3000
 MAX_IMAGE_PROMPT_CHARS: int = 1000
 
 # Astro article frontmatter — required field set and the theme allowlist. Source of truth is
-# the external allienna/veilleur content-collection schema (AD-5); reconcile in burn-in (F-013).
+# the external allienna/veilleur content-collection schema (AD-5). Reconciling this set against
+# that schema is a prerequisite of the post-talk publish-repo flip (see GITHUB_REPO_NAME below).
 REQUIRED_FRONTMATTER_FIELDS: tuple[str, ...] = ("title", "date", "description", "tags")
 THEME_ALLOWLIST: frozenset[str] = frozenset(
     {"ai", "cloud", "devops", "web", "data", "security", "mobile", "other"}
@@ -135,11 +136,14 @@ IMAGEN_BRAND_TEMPLATE: str = (
 )
 
 # GitHub Contents API target (FR-A4). Migration-phase override: writes to this monorepo to keep
-# the live v1 site clean while v2 is built; the eventual target is `allienna/veilleur` — a
-# one-constant switch tracked for F-007/F-013 (see plan AD-5 / Open Q#2).
+# the live v1 site clean while v2 is built. Flipping to the eventual `allienna/veilleur` target is
+# a one-constant switch, deliberately DEFERRED to a post-talk step (F-013 plan AD-4): it requires
+# the external `allienna/veilleur` repo to be live and its content-collection frontmatter schema
+# reconciled against REQUIRED_FRONTMATTER_FIELDS above. Not burn-in work — flipping mid-window
+# would reset the consecutive-success confidence the burn-in builds.
 GITHUB_PAT_SECRET: str = "github-pat-allienna-pages"
 GITHUB_REPO_OWNER: str = "allienna"
-GITHUB_REPO_NAME: str = "veilleur-app"  # migration override; eventual target is "veilleur"
+GITHUB_REPO_NAME: str = "veilleur-app"  # migration override; post-talk flip target is "veilleur"
 GITHUB_BRANCH: str = "main"
 POST_MD_PATH_TEMPLATE: str = "site/src/content/posts/{date}-{slug}.md"
 POST_IMAGE_PATH_TEMPLATE: str = "site/public/images/posts/{date}.webp"
