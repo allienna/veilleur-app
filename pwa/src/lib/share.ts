@@ -72,5 +72,7 @@ function downloadBlob(blob: Blob, filename: string): void {
   document.body.appendChild(a);
   a.click();
   a.remove();
-  URL.revokeObjectURL(href);
+  // Defer revoke: revoking in the same tick as click() can abort the save on WebKit/iOS,
+  // which reads the blob asynchronously after the click initiates the download.
+  setTimeout(() => URL.revokeObjectURL(href), 0);
 }

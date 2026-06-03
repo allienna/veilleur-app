@@ -8,6 +8,9 @@ import { copyText, saveImage } from "@/lib/share";
 
 type Status = "idle" | "copying" | "saving";
 
+/** Toast lifetime for share confirmations (DESIGN §interactions — 2s). */
+const TOAST_MS = 2000;
+
 export interface ShareSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -35,9 +38,9 @@ export function ShareSheet({
     setStatus("copying");
     const result = await copyText(linkedin);
     setStatus("idle");
-    // FR-2: no confirmation dialog — a transient toast confirms (DESIGN §interactions).
-    if (result.ok) toast.success("Post copié");
-    else toast.error("Échec de la copie"); // sheet stays open so the operator can retry.
+    // FR-2: no confirmation dialog — a transient 2s toast confirms (DESIGN §interactions).
+    if (result.ok) toast.success("Post copié", { duration: TOAST_MS });
+    else toast.error("Échec de la copie", { duration: TOAST_MS }); // sheet stays open to retry.
   }
 
   async function onSave(): Promise<void> {
@@ -47,9 +50,9 @@ export function ShareSheet({
     if (result.ok) {
       // On iOS the native share sheet replaces the toast (DESIGN §interactions, line 230);
       // only the <a download> fallback needs an explicit confirmation.
-      if (result.via === "download") toast.success("Image enregistrée");
+      if (result.via === "download") toast.success("Image enregistrée", { duration: TOAST_MS });
     } else if (result.reason === "error") {
-      toast.error("Image indisponible");
+      toast.error("Image indisponible", { duration: TOAST_MS });
     } // `cancelled` (user dismissed the OS sheet) is a no-op.
   }
 

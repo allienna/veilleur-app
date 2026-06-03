@@ -93,7 +93,7 @@ describe("ShareSheet — copy (AC-2, AC-4)", () => {
     renderOpen();
     await userEvent.click(screen.getByRole("button", { name: /Copier le post/ }));
     await waitFor(() => expect(writeText).toHaveBeenCalledWith("Post LinkedIn."));
-    expect(success).toHaveBeenCalledWith("Post copié");
+    expect(success).toHaveBeenCalledWith("Post copié", { duration: 2000 });
   });
 
   it("on copy failure shows an error toast and leaves the sheet open", async () => {
@@ -134,7 +134,7 @@ describe("ShareSheet — save image (AC-3, AC-5)", () => {
     renderOpen();
     await userEvent.click(screen.getByRole("button", { name: /Enregistrer l'image/ }));
     await waitFor(() => expect(click).toHaveBeenCalledTimes(1));
-    expect(success).toHaveBeenCalledWith("Image enregistrée");
+    expect(success).toHaveBeenCalledWith("Image enregistrée", { duration: 2000 });
     click.mockRestore();
   });
 
@@ -143,9 +143,9 @@ describe("ShareSheet — save image (AC-3, AC-5)", () => {
     setNav("clipboard", { writeText: vi.fn().mockResolvedValue(undefined) });
     renderOpen();
     await userEvent.click(screen.getByRole("button", { name: /Enregistrer l'image/ }));
-    await waitFor(() => expect(error).toHaveBeenCalledWith("Image indisponible"));
+    await waitFor(() => expect(error).toHaveBeenCalledWith("Image indisponible", { duration: 2000 }));
     await userEvent.click(screen.getByRole("button", { name: /Copier le post/ }));
-    await waitFor(() => expect(success).toHaveBeenCalledWith("Post copié"));
+    await waitFor(() => expect(success).toHaveBeenCalledWith("Post copié", { duration: 2000 }));
   });
 });
 
