@@ -11,6 +11,7 @@ from minion.generate.fakes import FakeGenerateRunner
 from minion.generate.ports import GenerateRunner
 from minion.ingest.fakes import FakeGmailClient, FakeJinaClient
 from minion.ingest.ports import GmailClient, JinaClient
+from minion.notify import Notifier
 from minion.publish.fakes import (
     FakeContentRepository,
     FakeImageGenerator,
@@ -39,7 +40,12 @@ def test_non_padded_date_rejected() -> None:
 
 
 def test_wired_run_exits_zero(monkeypatch) -> None:  # type: ignore[no-untyped-def]
-    def fake_build(clock: Clock) -> tuple[InMemoryRunStore, InMemoryLockStore, ArticleStore]:
+    def fake_client() -> object:
+        return object()  # the in-memory stores ignore it; no real Firestore needed
+
+    def fake_build(
+        client: object, clock: Clock
+    ) -> tuple[InMemoryRunStore, InMemoryLockStore, ArticleStore]:
         return InMemoryRunStore(), InMemoryLockStore(clock), InMemoryArticleStore()
 
     def fake_clients() -> tuple[
@@ -55,7 +61,18 @@ def test_wired_run_exits_zero(monkeypatch) -> None:  # type: ignore[no-untyped-d
             FakeContentRepository(),
         )
 
+    class _NoopNotifier:
+        """Stand-in notifier so the CLI test needs no Secret Manager / Firestore."""
+
+        def notify(self, run: object) -> None:
+            return None
+
+    def fake_notifier(client: object) -> Notifier:
+        return _NoopNotifier()
+
+    monkeypatch.setattr(cli_mod, "build_firestore_client", fake_client)
     monkeypatch.setattr(cli_mod, "build_stores", fake_build)
     monkeypatch.setattr(cli_mod, "build_clients", fake_clients)
+    monkeypatch.setattr(cli_mod, "build_notifier", fake_notifier)
     result = CliRunner().invoke(cli, ["run", "--date", "2026-06-01"])
     assert result.exit_code == 0, result.output  # skipped (no sources) is not a failure

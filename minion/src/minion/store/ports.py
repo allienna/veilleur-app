@@ -14,11 +14,23 @@ overwrites the same `runs/{date}` document and clears its step children (AC-4).
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import datetime
 from typing import Protocol
 
+from veilleur_shared.push_subscription import PushSubscription
+
 from minion.models import Lock, Run, RunStatus, RunStep
 from minion.publish.models import ArticleDoc
+
+
+@dataclass(frozen=True)
+class StoredSubscription:
+    """A persisted push subscription plus its Firestore document id (sha256(endpoint)). The id
+    lets the notifier prune a dead subscription (410/404) by document (F-012 AD-2/AD-4)."""
+
+    id: str
+    data: PushSubscription
 
 
 class RunStore(Protocol):
@@ -74,4 +86,17 @@ class ArticleStore(Protocol):
 
     def get_article(self, date: str) -> ArticleDoc | None:
         """Return the article persisted for `date`, or None."""
+        ...
+
+
+class SubscriptionStore(Protocol):
+    """Reads the operator's Web Push subscriptions (written client-side by the PWA) and prunes
+    dead ones (F-012 AD-4). The Minion reads these server-side, bypassing Firestore Rules."""
+
+    def list_subscriptions(self) -> list[StoredSubscription]:
+        """Return every stored subscription, each validated against the shared schema."""
+        ...
+
+    def delete(self, subscription_id: str) -> None:
+        """Delete `pushSubscriptions/{subscription_id}` (idempotent — no-op if absent)."""
         ...

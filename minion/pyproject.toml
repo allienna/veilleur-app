@@ -19,7 +19,10 @@ dependencies = [
     "google-genai>=0.3",
     "httpx>=0.27",
     "pillow>=10.4",
-    "pydantic>=2.8",
+    # `email` extra pulls in email-validator, required by the generated PushSubscription model's
+    # EmailStr field (F-012). pywebpush signs Web Push payloads with the VAPID private key.
+    "pydantic[email]>=2.8",
+    "pywebpush>=2.0",
     "python-json-logger>=2.0",
     "python-ulid>=2.0",
     "veilleur-shared",

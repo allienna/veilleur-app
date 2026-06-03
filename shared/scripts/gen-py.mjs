@@ -19,6 +19,7 @@ const targets = [
   ["run-status.json", "run_status.py"],
   ["run.json", "run.py"],
   ["article.json", "article.py"],
+  ["push-subscription.json", "push_subscription.py"],
 ];
 
 for (const [schema, out] of targets) {

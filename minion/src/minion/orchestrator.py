@@ -21,6 +21,7 @@ from typing import cast
 from minion.clock import Clock, new_run_id
 from minion.logging import bind
 from minion.models import ALREADY_RUNNING, Lock, Run, RunStatus, RunStep
+from minion.notify import Notifier
 from minion.steps import STEPS, Step, StepContext
 from minion.store.ports import LockStore, RunStore
 
@@ -32,9 +33,16 @@ def run_pipeline(
     lock_store: LockStore,
     clock: Clock,
     steps: tuple[Step, ...] = STEPS,
+    notifier: Notifier | None = None,
 ) -> Run:
     """Execute the pipeline for `date`. Returns the final (assembled) run, or an in-memory
-    aborted run if the concurrency guard tripped."""
+    aborted run if the concurrency guard tripped.
+
+    When a `notifier` is supplied it is invoked once, after the run is finalized, for every
+    terminal path (success / success_with_warnings / failure / skipped) — the orchestrator is the
+    only place that sees the final status + reason, since a graceful skip or a failure halts the
+    remaining steps and never reaches the success-only `publish` step (F-012 AD-1). The notifier
+    decides whether a given status warrants a push and must never raise (FR-5 soft-fail)."""
     run_id = new_run_id()
     log = bind(run_id)
     started_at = clock.now()
@@ -130,6 +138,15 @@ def run_pipeline(
 
         final = run_store.get_run(date)
         assert final is not None
+        if notifier is not None:
+            # Run-completion push (F-012). Sees the terminal status + reason for every path; the
+            # notifier decides whether to send. It is contracted not to raise, but the run is
+            # already finalized here — a notifier defect must never undo a finished run, so guard
+            # defensively (push failure ≠ run failure, PRD §285).
+            try:
+                notifier.notify(final)
+            except Exception:
+                log.exception("notifier raised after finalize; run unaffected")
         return final
     finally:
         lock_store.release(run_id)

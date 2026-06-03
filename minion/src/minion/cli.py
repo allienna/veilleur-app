@@ -9,14 +9,19 @@ from __future__ import annotations
 
 import re
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 import click
+
+if TYPE_CHECKING:
+    from google.cloud import firestore
 
 from minion.clock import Clock, SystemClock
 from minion.generate.ports import GenerateRunner
 from minion.ingest.ports import GmailClient, JinaClient
 from minion.logging import configure_logging
 from minion.models import RunStatus
+from minion.notify import Notifier
 from minion.orchestrator import run_pipeline
 from minion.publish.ports import ContentRepository, ImageGenerator, PromptRewriter
 from minion.steps import build_pipeline
@@ -38,22 +43,41 @@ def _validate_date(ctx: click.Context, param: click.Parameter, value: str | None
     return value
 
 
-def build_stores(clock: Clock) -> tuple[RunStore, LockStore, ArticleStore]:
-    """Construct the production Firestore-backed stores (lazy import — needs GCP creds)."""
+def build_firestore_client() -> firestore.Client:
+    """Construct the single production Firestore client shared by the stores and the notifier
+    (lazy import — needs GCP creds)."""
     from google.cloud import firestore
 
+    return firestore.Client()
+
+
+def build_stores(
+    client: firestore.Client, clock: Clock
+) -> tuple[RunStore, LockStore, ArticleStore]:
+    """Construct the production Firestore-backed stores over `client`."""
     from minion.store.firestore import (
         FirestoreArticleStore,
         FirestoreLockStore,
         FirestoreRunStore,
     )
 
-    client = firestore.Client()
     return (
         FirestoreRunStore(client),
         FirestoreLockStore(client, clock),
         FirestoreArticleStore(client),
     )
+
+
+def build_notifier(client: firestore.Client) -> Notifier:
+    """Construct the production Web Push notifier (F-012): a Firestore subscription store over
+    `client` plus the VAPID private key from Secret Manager."""
+    from minion import secrets
+    from minion.config import VAPID_PRIVATE_KEY_SECRET
+    from minion.notify import WebPushNotifier
+    from minion.store.firestore import FirestoreSubscriptionStore
+
+    subscriptions = FirestoreSubscriptionStore(client)
+    return WebPushNotifier(subscriptions, secrets.require(VAPID_PRIVATE_KEY_SECRET))
 
 
 def build_clients() -> tuple[
@@ -93,7 +117,8 @@ def run(date: str | None) -> None:
     configure_logging()
     clock = SystemClock()
     target = date or clock.now().strftime("%Y-%m-%d")
-    run_store, lock_store, article_store = build_stores(clock)
+    client = build_firestore_client()
+    run_store, lock_store, article_store = build_stores(client, clock)
     gmail_client, jina_client, generate_runner, image_generator, prompt_rewriter, content_repo = (
         build_clients()
     )
@@ -106,8 +131,14 @@ def run(date: str | None) -> None:
         content_repo,
         article_store,
     )
+    notifier = build_notifier(client)
     result = run_pipeline(
-        target, run_store=run_store, lock_store=lock_store, clock=clock, steps=steps
+        target,
+        run_store=run_store,
+        lock_store=lock_store,
+        clock=clock,
+        steps=steps,
+        notifier=notifier,
     )
     if result.status is RunStatus.failure:
         raise SystemExit(1)

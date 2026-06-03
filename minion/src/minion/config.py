@@ -160,3 +160,17 @@ PLACEHOLDER_ASSET: str = "placeholder.webp"
 
 # Run-level warning reason latched when the Imagen placeholder fallback fires (plan AD-4).
 IMAGEN_FALLBACK_WARNING: str = "imagen_moderation_fallback"
+
+# --- Push notifications (F-012) ----------------------------------------------------------
+
+# Secret holding the VAPID private key (PEM/base64url) used by pywebpush to sign Web Push
+# payloads (FR-1). The matching public key is non-secret and ships to the PWA build as
+# VITE_VAPID_PUBLIC_KEY.
+VAPID_PRIVATE_KEY_SECRET: str = "vapid-private-key"
+
+# VAPID JWT `sub` claim — a mailto:/https: contact the push service can reach (RFC 8292).
+VAPID_SUBJECT: str = "mailto:aurelien.allienne@gmail.com"
+
+# Firestore collection the PWA writes push subscriptions to and the Minion reads server-side
+# (F-012 AD-4). Document id is sha256(endpoint) so re-subscribe upserts.
+PUSH_SUBSCRIPTIONS_COLLECTION: str = "pushSubscriptions"

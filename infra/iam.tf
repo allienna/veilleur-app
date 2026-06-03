@@ -8,14 +8,15 @@ resource "google_service_account" "minion" {
   display_name = "Veilleur Minion runtime SA (production)"
 }
 
-# Per-secret accessor on the 3 secrets the Minion reads at runtime (gmail / anthropic-oauth /
-# github-pat). vapid-private-key is added in F-012; anthropic-api-key-fallback is never granted
-# by default (constitution §2.2). The secret slots themselves are owned by the spike state.
+# Per-secret accessor on the secrets the Minion reads at runtime (gmail / anthropic-oauth /
+# github-pat / vapid-private-key). anthropic-api-key-fallback is never granted by default
+# (constitution §2.2). The secret slots themselves are owned by the spike state.
 locals {
   minion_runtime_secrets = [
     "gmail-oauth-refresh-token",
     "anthropic-oauth-token",
     "github-pat-allienna-pages",
+    "vapid-private-key", # F-012: signs Web Push payloads (pywebpush). Public key ships to the PWA as VITE_VAPID_PUBLIC_KEY.
   ]
 }
 

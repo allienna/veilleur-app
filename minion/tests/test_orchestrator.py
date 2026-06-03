@@ -108,3 +108,52 @@ def test_step_failure_marks_run_failure_and_halts(run_store, lock_store, clock) 
     assert statuses[StepName.assemble] is RunStatus.failure
     assert StepName.generate not in statuses  # step after the failure never ran
     assert after.ran == []
+
+
+@dataclass
+class RecordingNotifier:
+    """Captures every run handed to it, to assert the orchestrator notifies on each path."""
+
+    seen: list[Run] = field(default_factory=list)
+
+    def notify(self, run: Run) -> None:
+        self.seen.append(run)
+
+
+def test_notifier_called_once_with_final_run_on_success(run_store, lock_store, clock) -> None:
+    notifier = RecordingNotifier()
+    final = run_pipeline(
+        DATE, run_store=run_store, lock_store=lock_store, clock=clock, notifier=notifier
+    )
+    assert len(notifier.seen) == 1
+    assert notifier.seen[0] == final
+    assert notifier.seen[0].status is RunStatus.success
+
+
+def test_notifier_called_on_skipped_path(run_store, lock_store, clock) -> None:
+    notifier = RecordingNotifier()
+    run_pipeline(
+        DATE,
+        run_store=run_store,
+        lock_store=lock_store,
+        clock=clock,
+        steps=(SkipStep(),),
+        notifier=notifier,
+    )
+    assert len(notifier.seen) == 1
+    assert notifier.seen[0].status is RunStatus.skipped
+    assert notifier.seen[0].error == "no_sources"
+
+
+def test_notifier_called_on_failure_path(run_store, lock_store, clock) -> None:
+    notifier = RecordingNotifier()
+    run_pipeline(
+        DATE,
+        run_store=run_store,
+        lock_store=lock_store,
+        clock=clock,
+        steps=(BoomStep(),),
+        notifier=notifier,
+    )
+    assert len(notifier.seen) == 1
+    assert notifier.seen[0].status is RunStatus.failure

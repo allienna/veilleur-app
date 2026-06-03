@@ -76,6 +76,11 @@ set both.
    client + a one-time consent flow); the script's runbook walks through it. Re-run until
    it exits 0.
 
+   **F-012 — `vapid-private-key`:** the Minion signs Web Push payloads (pywebpush) with the VAPID
+   private key. Generate the keypair once (`npx web-push generate-vapid-keys`), add the private
+   half as a secret version, and put the public half in the PWA's `VITE_VAPID_PUBLIC_KEY`. See
+   [`pwa/README.md`](../pwa/README.md) "Push notifications" for the full runbook.
+
 ## Run
 
 6. **Local container run** (uses your mounted ADC, not the service account):

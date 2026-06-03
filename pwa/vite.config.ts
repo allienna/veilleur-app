@@ -17,6 +17,12 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: "autoUpdate",
+      // injectManifest (F-012 AD-3): we own the service worker (src/sw.ts) because a Web Push
+      // handler is custom SW code that generateSW cannot host. The app-shell precache and the
+      // hero-image runtime cache (previously the `workbox` block) now live in src/sw.ts.
+      strategies: "injectManifest",
+      srcDir: "src",
+      filename: "sw.ts",
       manifest: {
         name: "Le Veilleur",
         short_name: "Veilleur",
@@ -33,22 +39,11 @@ export default defineConfig({
           { src: "/icons/icon.svg", sizes: "any", type: "image/svg+xml", purpose: "maskable" },
         ],
       },
-      workbox: {
-        // App-shell precache + static assets only. Article-document offline reads are
-        // handled by Firestore's IndexedDB persistentLocalCache (see src/firebase.ts) —
-        // Workbox cannot cache Firestore's WebChannel/RPC traffic.
+      injectManifest: {
+        // App-shell precache glob — injected as self.__WB_MANIFEST into src/sw.ts. Mirrors the
+        // former workbox.globPatterns. Article-document offline reads are handled by Firestore's
+        // IndexedDB persistentLocalCache (see src/firebase.ts), not Workbox.
         globPatterns: ["**/*.{js,css,html,svg,png,woff2}"],
-        runtimeCaching: [
-          {
-            // Hero images served from the public Astro site (GET, cacheable).
-            urlPattern: ({ url }) => url.hostname === "allienna.github.io",
-            handler: "StaleWhileRevalidate",
-            options: {
-              cacheName: "veilleur-hero-images",
-              expiration: { maxEntries: 40, maxAgeSeconds: 60 * 60 * 24 * 30 },
-            },
-          },
-        ],
       },
     }),
   ],

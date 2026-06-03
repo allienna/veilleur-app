@@ -15,12 +15,14 @@ from datetime import datetime
 from typing import Any, cast
 
 from google.cloud import firestore
+from veilleur_shared.push_subscription import PushSubscription
 
 from minion.clock import Clock
 from minion.config import (
     ARTICLES_COLLECTION,
     LOCK_DOC_ID,
     LOCKS_COLLECTION,
+    PUSH_SUBSCRIPTIONS_COLLECTION,
     RUN_TIMEOUT,
     RUNS_COLLECTION,
     STEP_ORDER,
@@ -28,6 +30,7 @@ from minion.config import (
 )
 from minion.models import Lock, Run, RunStatus, RunStep, StepName
 from minion.publish.models import ArticleDoc
+from minion.store.ports import StoredSubscription
 
 
 def _step_to_doc(step: RunStep) -> dict[str, Any]:
@@ -138,6 +141,31 @@ class FirestoreArticleStore:
         if not snapshot.exists:
             return None
         return ArticleDoc.model_validate(cast("dict[str, Any]", snapshot.to_dict()))
+
+
+class FirestoreSubscriptionStore:
+    """`pushSubscriptions/{sha256(endpoint)}` documents the PWA writes (F-012 AD-4). Read
+    server-side by the Minion (bypassing Rules) to send Web Push on run completion."""
+
+    def __init__(self, client: firestore.Client) -> None:
+        self._client = client
+
+    def _collection(self) -> Any:
+        return self._client.collection(PUSH_SUBSCRIPTIONS_COLLECTION)
+
+    def list_subscriptions(self) -> list[StoredSubscription]:
+        # Validate each doc against the shared schema at the boundary (constitution §4) — a
+        # malformed subscription raises rather than reaching pywebpush.
+        return [
+            StoredSubscription(
+                id=snapshot.id,
+                data=PushSubscription.model_validate(cast("dict[str, Any]", snapshot.to_dict())),
+            )
+            for snapshot in self._collection().stream()
+        ]
+
+    def delete(self, subscription_id: str) -> None:
+        self._collection().document(subscription_id).delete()
 
 
 class FirestoreLockStore:

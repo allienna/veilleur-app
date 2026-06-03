@@ -35,6 +35,24 @@ service cloud.firestore {
       }
     }
 
+    // Web Push subscriptions (F-012 FR-3). The FIRST client-writable collection: the operator's
+    // PWA creates/updates/deletes its own subscription doc so the Minion can read it server-side
+    // and send notifications. Ownership-scoped — the doc's `operatorEmail` must be the allowed
+    // operator on both the incoming write and the existing doc — so the mono-tenant boundary
+    // (constitution §2.1) holds even though clients can write here.
+    match /pushSubscriptions/{id} {
+      function ownsIncoming() {
+        return request.resource.data.operatorEmail == "aurelien.allienne@gmail.com";
+      }
+      function ownsExisting() {
+        return resource.data.operatorEmail == "aurelien.allienne@gmail.com";
+      }
+      allow read: if isAllowedOperator() && ownsExisting();
+      allow create: if isAllowedOperator() && ownsIncoming();
+      allow update: if isAllowedOperator() && ownsExisting() && ownsIncoming();
+      allow delete: if isAllowedOperator() && ownsExisting();
+    }
+
     // Deny-by-default for every other collection.
     match /{document=**} {
       allow read, write: if false;
