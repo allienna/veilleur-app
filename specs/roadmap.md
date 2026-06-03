@@ -96,6 +96,7 @@ Decomposes the PRD into vertically-sliced features ordered by dependency. Each f
 **Delivers**: ≤30s flow from PWA-open to LinkedIn-paste-ready on iOS.
 **Surfaces**: `pwa`
 **Estimated size**: S
+**Status**: Complete (reviewed Pass-with-notes; AC-7 device ≤30s flow deferred to F-013)
 
 ### F-011: PWA supervision + manual trigger
 **Summary**: Real-time Firestore listener on `runs/{currentRunId}` (≤2s latency). `RunTimeline` + `RunStepRow` + `StatusPill` (six status tokens from DESIGN §1). Run history list ≥7 entries with cost + duration. `RunNowButton` calls `trigger-api`, navigates to live view. `ErrorBanner` for failed runs.
