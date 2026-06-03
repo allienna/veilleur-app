@@ -38,7 +38,9 @@ jobs:
   deploy:
     needs: build-pwa
     runs-on: ubuntu-latest
-    # Guarded: real Firebase Hosting deploy is wired in F-007.
+    # Guarded: F-009 ships a manual deploy path only (firebase.json + pwa/README;
+    # `firebase deploy --only hosting`). CI auto-deploy (Workload Identity Federation)
+    # is deferred to a later track.
     if: false
     steps:
-      - run: echo "Deploy to Firebase Hosting — wired in F-007."
+      - run: echo "Deploy is operator-run for now — see pwa/README (F-009 Q4)."

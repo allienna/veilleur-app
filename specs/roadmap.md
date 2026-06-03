@@ -87,6 +87,7 @@ Decomposes the PRD into vertically-sliced features ordered by dependency. Each f
 **Delivers**: Operator can sign in on iPhone, install to home screen, read today + last 30 articles. **First PWA on real device.**
 **Surfaces**: `pwa`
 **Estimated size**: L
+**Status**: Complete (reviewed Pass-with-notes; AC-9 device LCP deferred to F-013)
 
 ### F-010: PWA LinkedIn share (two-tap)
 **Summary**: `ShareSheet` with "Copier le post" (clipboard write) + "Enregistrer l'image" (Web Share API or `<a download>` for iOS Photos save). Toast confirmations. Wired into the ArticleView footer.

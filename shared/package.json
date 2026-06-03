@@ -6,7 +6,8 @@
   "type": "module",
   "exports": {
     "./run-status": "./generated/ts/run-status.ts",
-    "./run": "./generated/ts/run.ts"
+    "./run": "./generated/ts/run.ts",
+    "./article": "./generated/ts/article.ts"
   },
   "scripts": {
     "gen:ts": "node scripts/gen-ts.mjs",

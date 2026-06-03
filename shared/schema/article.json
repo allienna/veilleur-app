@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://veilleur.app/schema/article.json",
+  "title": "Article",
+  "description": "Shape of a published article document persisted to Firestore `articles/{date}` (the document key is `date`). Written server-side by the Minion `publish` step via `model_dump(mode=\"json\")`; read by the PWA reading surface (F-009). Field names are snake_case to match the persisted document. Source of truth for the Minion publish model and the PWA article repository.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["date", "slug", "theme", "frontmatter", "body", "linkedin", "image"],
+  "properties": {
+    "date": {
+      "type": "string",
+      "description": "Publication date in YYYY-MM-DD (Europe/Paris). Firestore document key and idempotency key.",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+    },
+    "slug": {
+      "type": "string",
+      "description": "URL slug derived from the article title."
+    },
+    "theme": {
+      "type": "string",
+      "description": "The article's tech-watch theme; rendered as a TagPill in the PWA."
+    },
+    "frontmatter": {
+      "$ref": "#/$defs/Frontmatter"
+    },
+    "body": {
+      "type": "string",
+      "description": "Article body (Markdown), rendered with the prose-veilleur tokens."
+    },
+    "linkedin": {
+      "type": "string",
+      "description": "Ready-to-post LinkedIn text (≤3000 chars). Consumed by the PWA share sheet (F-010)."
+    },
+    "image": {
+      "type": "string",
+      "description": "Hero image filename, e.g. \"2026-06-01.webp\" (mirrors frontmatter.image). Resolved by the PWA against the public Astro images base URL."
+    },
+    "commit_sha": {
+      "type": ["string", "null"],
+      "description": "GitHub commit SHA set by the `publish` step once the article lands on the Astro site; null before the commit.",
+      "default": null
+    },
+    "published": {
+      "type": "boolean",
+      "description": "False = recoverable pre-commit persist; true = live on the public site.",
+      "default": false
+    }
+  },
+  "$defs": {
+    "Frontmatter": {
+      "type": "object",
+      "title": "Frontmatter",
+      "description": "Astro content-collection frontmatter for the generated article.",
+      "additionalProperties": false,
+      "required": ["title", "date", "description", "tags"],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Article title."
+        },
+        "date": {
+          "type": "string",
+          "description": "Publication date in YYYY-MM-DD.",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+        },
+        "description": {
+          "type": "string",
+          "description": "Short article description / excerpt."
+        },
+        "tags": {
+          "type": "array",
+          "description": "Theme tags.",
+          "items": { "type": "string" }
+        },
+        "image": {
+          "type": "string",
+          "description": "Hero image filename; empty at generation time, filled by the Imagen step.",
+          "default": ""
+        },
+        "kind": {
+          "type": "string",
+          "description": "Content kind (veille | blog).",
+          "default": "veille"
+        }
+      }
+    }
+  }
+}

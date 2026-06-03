@@ -5,12 +5,11 @@ from __future__ import annotations
 import pytest
 from pydantic import ValidationError
 
-from minion.generate.models import ArticleFrontmatter
-from minion.publish.models import ArticleDoc, CommitResult, ImageArtifact
+from minion.publish.models import ArticleDoc, CommitResult, Frontmatter, ImageArtifact
 
 
-def _frontmatter() -> ArticleFrontmatter:
-    return ArticleFrontmatter(title="T", date="2026-06-01", description="d", tags=["ai"])
+def _frontmatter() -> Frontmatter:
+    return Frontmatter(title="T", date="2026-06-01", description="d", tags=["ai"])
 
 
 def test_image_artifact_defaults_placeholder_false() -> None:
