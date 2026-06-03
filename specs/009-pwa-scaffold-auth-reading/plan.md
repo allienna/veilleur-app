@@ -134,4 +134,5 @@ Implements F-009 on top of the existing `pwa/` skeleton (React 18 + TS + Vite, `
 
 ## Review
 
-Spec status set to **Approved**; roadmap F-009 → **Planning**. Review this plan; once approved, run `/tasks 009-pwa-scaffold-auth-reading`.
+**Status: Executed.** This plan was broken into tasks (`tasks.md`), implemented in full, reviewed
+(Pass-with-notes), and shipped (PR #13). Roadmap F-009 is **Complete**. No pending approval step.

@@ -28,6 +28,8 @@ export function AuthProvider({ children }: { children: ReactNode }): JSX.Element
 
   useEffect(() => {
     return onAuthStateChanged(auth, (user) => {
+      // Clear any stale sign-in error: it belongs to the previous attempt, not this state.
+      setError(null);
       setEmail(user?.email ?? null);
       setStatus(
         deriveStatus(user ? { email: user.email, emailVerified: user.emailVerified } : null),

@@ -135,4 +135,6 @@ Layout/tokens: `max-w-3xl mx-auto px-4 sm:px-6` reading container; `regular` den
 
 ## Review
 
-Roadmap status set to **Specifying**. Review this spec; once approved, run `/plan 009-pwa-scaffold-auth-reading`.
+**Status: Complete.** This spec was specified → planned → implemented → reviewed (Pass-with-notes)
+→ shipped (PR #13). See `review.md` / `qa-report.md`. The single deferred item is AC-9 (on-device
+LCP), tracked to F-013. No further action on this track.

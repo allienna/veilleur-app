@@ -36,7 +36,7 @@ cross-boundary change before any UI work.
 | AC-7 Rules: articles read gated; writes denied; deny-all elsewhere | ✅ | 6 emulator tests: allowed read ✓; non-allowed/unverified/unauth denied; client write denied; `runs/*` denied |
 | AC-8 allowed-email byte-identical in 3 locations | ✅ | `pnpm check:email` passes; `config.ts` pin untouched |
 | AC-9 LCP ≤2s / cached reload ≤500ms (4G), method documented | ⚠️ **Note** | Method + bundle profile documented in `pwa/PERF.md`. Cached reload structurally met (SW precache). **Cold on-device LCP not measured** (no browser/device in this env); Firebase SDK dominates the 203 kB-gzip shared chunk — deferred to **F-013** burn-in with the bundle-trim lever identified. |
-| AC-10 offline render + ErrorBoundary | ✅ | Workbox runtime caching (Firestore NetworkFirst, hero SWR); offline `ErrorBanner` in `AppShell`; `ErrorBoundary` + `pwa.boundary` log tested |
+| AC-10 offline render + ErrorBoundary | ✅ | Firestore `persistentLocalCache` (IndexedDB) serves last-known articles across reload; Workbox precaches the shell + hero images (SWR); offline `ErrorBanner` in `AppShell`; `ErrorBoundary` + `pwa.boundary` log tested |
 | AC-11 all five DESIGN §4 states on every view | ✅ | loading=`SkeletonCard`, empty=`EmptyState`, error=`ErrorBanner`, success=`ArticleView`, offline=info banner — present on Today/History/Article |
 
 ## Spec conformance notes

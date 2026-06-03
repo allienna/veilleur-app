@@ -34,19 +34,13 @@ export default defineConfig({
         ],
       },
       workbox: {
+        // App-shell precache + static assets only. Article-document offline reads are
+        // handled by Firestore's IndexedDB persistentLocalCache (see src/firebase.ts) —
+        // Workbox cannot cache Firestore's WebChannel/RPC traffic.
         globPatterns: ["**/*.{js,css,html,svg,png,woff2}"],
         runtimeCaching: [
           {
-            // Today/History article documents read from Firestore (FR-5 offline).
-            urlPattern: ({ url }) => url.hostname === "firestore.googleapis.com",
-            handler: "NetworkFirst",
-            options: {
-              cacheName: "veilleur-firestore",
-              expiration: { maxEntries: 40, maxAgeSeconds: 60 * 60 * 24 * 30 },
-            },
-          },
-          {
-            // Hero images served from the public Astro site.
+            // Hero images served from the public Astro site (GET, cacheable).
             urlPattern: ({ url }) => url.hostname === "allienna.github.io",
             handler: "StaleWhileRevalidate",
             options: {
