@@ -174,7 +174,3 @@ VAPID_SUBJECT: str = "mailto:aurelien.allienne@gmail.com"
 # Firestore collection the PWA writes push subscriptions to and the Minion reads server-side
 # (F-012 AD-4). Document id is sha256(endpoint) so re-subscribe upserts.
 PUSH_SUBSCRIPTIONS_COLLECTION: str = "pushSubscriptions"
-
-# Skip reason (from validate_input, `ingestion.py`) that must NOT trigger a push: an empty
-# mailbox is a silent no-op, not a notification (FR-E2, PRD §267).
-NO_SOURCES_REASON: str = "no_sources"

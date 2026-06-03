@@ -20,26 +20,27 @@ function formatCost(costUsd?: number | null): string {
 export default function Supervision(): JSX.Element {
   const state = useAsync(() => listRecentRuns(30), []);
 
+  // The opt-in control sits in the header so it is reachable in every state — including before the
+  // first run (empty) and during load — not only once a run history exists.
+  let body: JSX.Element;
   if (state.status === "loading")
-    return (
-      <div className="mx-auto max-w-5xl">
-        <div className="grid gap-md">
-          <SkeletonCard />
-          <SkeletonCard />
-        </div>
+    body = (
+      <div className="grid gap-md">
+        <SkeletonCard />
+        <SkeletonCard />
       </div>
     );
-  if (state.status === "error")
-    return <ErrorBanner message="Impossible de charger l'historique des runs. Réessayez." />;
-  if (state.data.length === 0)
-    return <EmptyState title="Aucun run pour l'instant" subline="L'historique apparaîtra ici après le premier run." />;
-
-  return (
-    <div className="mx-auto max-w-5xl">
-      <div className="mb-lg flex flex-wrap items-center justify-between gap-md">
-        <h1 className="text-h1 font-display text-fg">Supervision</h1>
-        <NotificationOptIn />
-      </div>
+  else if (state.status === "error")
+    body = <ErrorBanner message="Impossible de charger l'historique des runs. Réessayez." />;
+  else if (state.data.length === 0)
+    body = (
+      <EmptyState
+        title="Aucun run pour l'instant"
+        subline="L'historique apparaîtra ici après le premier run."
+      />
+    );
+  else
+    body = (
       <ul className="grid gap-sm">
         {state.data.map((run) => (
           <li key={run.date}>
@@ -63,6 +64,15 @@ export default function Supervision(): JSX.Element {
           </li>
         ))}
       </ul>
+    );
+
+  return (
+    <div className="mx-auto max-w-5xl">
+      <div className="mb-lg flex flex-wrap items-center justify-between gap-md">
+        <h1 className="text-h1 font-display text-fg">Supervision</h1>
+        <NotificationOptIn />
+      </div>
+      {body}
     </div>
   );
 }

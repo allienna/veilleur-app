@@ -40,6 +40,9 @@ importers:
       tailwind-merge:
         specifier: 3.6.0
         version: 3.6.0
+      workbox-core:
+        specifier: 7.4.1
+        version: 7.4.1
       workbox-expiration:
         specifier: 7.4.1
         version: 7.4.1

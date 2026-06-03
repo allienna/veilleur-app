@@ -6,6 +6,7 @@
 // Article-document offline reads stay on Firestore's IndexedDB cache (src/firebase.ts), not here.
 // The push/notificationclick LOGIC lives in src/lib/pushHandlers.ts (unit-tested under jsdom);
 // this file is the thin event wiring, type-checked via tsconfig.worker.json (WebWorker lib).
+import { clientsClaim } from "workbox-core";
 import { ExpirationPlugin } from "workbox-expiration";
 import { precacheAndRoute, type PrecacheEntry } from "workbox-precaching";
 import { registerRoute } from "workbox-routing";
@@ -17,6 +18,12 @@ declare const self: ServiceWorkerGlobalScope & {
   // Injected by vite-plugin-pwa's injectManifest at build time.
   __WB_MANIFEST: Array<PrecacheEntry | string>;
 };
+
+// `registerType: "autoUpdate"` means a new SW should take over promptly — otherwise an updated
+// push handler would sit in `waiting` until every PWA window closes (rare for a home-screen app).
+// With injectManifest we opt in explicitly.
+self.skipWaiting();
+clientsClaim();
 
 // Injected by vite-plugin-pwa (injectManifest.globPatterns). The app shell + static assets.
 precacheAndRoute(self.__WB_MANIFEST);

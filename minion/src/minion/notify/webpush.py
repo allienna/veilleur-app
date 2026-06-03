@@ -83,7 +83,14 @@ class WebPushNotifier:
             )
             return
 
-        subscriptions = self._subscriptions.list_subscriptions()
+        try:
+            # Reading subscriptions can raise — a transient Firestore error, or a malformed/stale
+            # doc the client wrote (the rules gate ownership, not shape). A finalized run must
+            # never be undone by the notifier (AD-2), so swallow it here too, not just per-send.
+            subscriptions = self._subscriptions.list_subscriptions()
+        except Exception as exc:
+            log.warning("could not load push subscriptions; skipping", extra={"error": str(exc)})
+            return
         if not subscriptions:
             log.info("no push subscriptions; nothing to send")
             return

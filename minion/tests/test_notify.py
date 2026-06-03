@@ -131,3 +131,20 @@ def test_no_subscriptions_is_a_noop() -> None:
     send = _Recorder()
     WebPushNotifier(InMemorySubscriptionStore(), "k", send=send).notify(_run(RunStatus.success))
     assert send.calls == []
+
+
+def test_subscription_load_error_is_swallowed() -> None:
+    """A failing subscription read (transient Firestore error, or a malformed/stale doc that
+    raises on validation) must NOT escape notify() — a finalized run is never undone (AD-2)."""
+
+    class _ExplodingStore:
+        def list_subscriptions(self) -> list[object]:
+            raise RuntimeError("firestore unavailable")
+
+        def delete(self, subscription_id: str) -> None:  # pragma: no cover - never reached
+            raise AssertionError("delete should not be called")
+
+    send = _Recorder()
+    # Must not raise.
+    WebPushNotifier(_ExplodingStore(), "k", send=send).notify(_run(RunStatus.success))  # type: ignore[arg-type]
+    assert send.calls == []

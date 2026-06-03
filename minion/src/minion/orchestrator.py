@@ -140,8 +140,13 @@ def run_pipeline(
         assert final is not None
         if notifier is not None:
             # Run-completion push (F-012). Sees the terminal status + reason for every path; the
-            # notifier itself decides whether to send and never raises (push failure ≠ run failure).
-            notifier.notify(final)
+            # notifier decides whether to send. It is contracted not to raise, but the run is
+            # already finalized here — a notifier defect must never undo a finished run, so guard
+            # defensively (push failure ≠ run failure, PRD §285).
+            try:
+                notifier.notify(final)
+            except Exception:
+                log.exception("notifier raised after finalize; run unaffected")
         return final
     finally:
         lock_store.release(run_id)
