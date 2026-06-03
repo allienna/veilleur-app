@@ -34,3 +34,16 @@ export function todayParis(): string {
   // en-CA yields YYYY-MM-DD; timeZone pins the civil date to Paris.
   return new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Paris" }).format(new Date());
 }
+
+/** "1,2 s" / "1 min 05 s" — elapsed between two ISO timestamps (supervision timeline). `endMs`
+ * lets the running step tick against a live clock. Returns "—" when the start is unknown. */
+export function formatDuration(startIso?: string | null, endIso?: string | null, endMs?: number): string {
+  if (!startIso) return "—";
+  const start = Date.parse(startIso);
+  const end = endIso ? Date.parse(endIso) : (endMs ?? Date.now());
+  const sec = Math.max(0, (end - start) / 1000);
+  if (sec < 60) return `${sec.toFixed(1).replace(".", ",")} s`;
+  const m = Math.floor(sec / 60);
+  const s = Math.floor(sec % 60);
+  return `${m} min ${String(s).padStart(2, "0")} s`;
+}

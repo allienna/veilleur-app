@@ -26,6 +26,7 @@ from minion.generate.assemble import assemble_context
 from minion.generate.models import (
     AssembledContext,
     GeneratedArticle,
+    GenerateInvocation,
     ValidationError,
     ValidationReport,
 )
@@ -75,7 +76,7 @@ class GenerateStep:
     sleep: Callable[[float], None] = time.sleep
     name: StepName = StepName.generate
 
-    def _invoke(self, context: AssembledContext, feedback: list[str]) -> str:
+    def _invoke(self, context: AssembledContext, feedback: list[str]) -> GenerateInvocation:
         """One logical invocation with transport-retry + exponential backoff (FR-2, AC-7)."""
         for attempt in range(config.CLAUDE_TRANSPORT_RETRIES + 1):
             try:
@@ -90,11 +91,20 @@ class GenerateStep:
         context = cast("AssembledContext", ctx.data.get("context") or AssembledContext(sources=[]))
         feedback: list[str] = []
         last_errors: list[ValidationError] = []
+        # Run-level cost/tokens: sum every billed `/generate` call (each retry costs money),
+        # surfaced to the orchestrator for the run document (F-011 AD-5). None until a call
+        # reports usage, so a CLI that doesn't emit it leaves the run's cost null.
+        cost_usd: float | None = None
+        tokens: int | None = None
 
         for attempt in range(config.MAX_GENERATE_RETRIES + 1):
-            raw = self._invoke(context, feedback)
+            invocation = self._invoke(context, feedback)
+            if invocation.cost_usd is not None:
+                cost_usd = (cost_usd or 0.0) + invocation.cost_usd
+            if invocation.tokens is not None:
+                tokens = (tokens or 0) + invocation.tokens
             try:
-                article = _parse_article(raw)
+                article = _parse_article(invocation.text)
             except (json.JSONDecodeError, PydanticValidationError) as exc:
                 last_errors = [ValidationError(code="unparseable_output", message=str(exc)[:200])]
                 feedback = [e.message for e in last_errors]
@@ -109,7 +119,14 @@ class GenerateStep:
                 ctx.log.info(
                     "article generated", extra={"attempt": attempt, "theme": article.theme}
                 )
-                return StepResult(payload={"article": article, "report": report})
+                return StepResult(
+                    payload={
+                        "article": article,
+                        "report": report,
+                        "costUsd": cost_usd,
+                        "tokens": tokens,
+                    }
+                )
 
             last_errors = report.errors
             feedback = [e.message for e in report.errors]

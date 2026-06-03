@@ -48,6 +48,14 @@ export interface Run {
    */
   error?: string | null;
   /**
+   * Total LLM cost for the run in USD (the `claude` CLI's native unit, from `total_cost_usd`). Null when the run never reached the `generate` step (e.g. skipped/no_sources or an early failure).
+   */
+  costUsd?: number | null;
+  /**
+   * Total LLM tokens (input + output) consumed by the `generate` step. Null when no generation ran (see `costUsd`).
+   */
+  tokens?: number | null;
+  /**
    * Ordered per-step records.
    */
   steps: RunStep[];

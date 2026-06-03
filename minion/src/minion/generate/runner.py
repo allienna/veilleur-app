@@ -21,8 +21,40 @@ import subprocess
 import tempfile
 
 from minion import config, secrets
-from minion.generate.models import AssembledContext
+from minion.generate.models import AssembledContext, GenerateInvocation
 from minion.generate.ports import GenerateTransportError
+
+
+def _parse_output(stdout: str) -> GenerateInvocation:
+    """Unwrap the `claude --output-format json` envelope into artefact text + usage telemetry.
+
+    The envelope is `{"result": "<artefact text>", "total_cost_usd": <float>, "usage": {...}}`.
+    Fallback (F-011 plan AD-5): if stdout is not that envelope (plain text, or the artefact JSON
+    itself — neither has a `result` key), treat the whole stdout as the artefact text with no cost.
+    """
+    try:
+        envelope = json.loads(stdout)
+    except json.JSONDecodeError:
+        return GenerateInvocation(text=stdout)
+    if not (isinstance(envelope, dict) and "result" in envelope):
+        return GenerateInvocation(text=stdout)
+
+    # Coerce defensively: a CLI that reports cost/usage in an unexpected JSON type must degrade to
+    # null (the AD-5 fallback), never crash the runner with a ValueError outside the transport path.
+    def _num(value: object) -> float | None:
+        try:
+            return float(value)  # type: ignore[arg-type]
+        except (TypeError, ValueError):
+            return None
+
+    cost = _num(envelope.get("total_cost_usd"))
+    usage = envelope.get("usage")
+    tokens: int | None = None
+    if isinstance(usage, dict):
+        used = [_num(usage.get("input_tokens")), _num(usage.get("output_tokens"))]
+        if any(t is not None for t in used):
+            tokens = int(sum(t for t in used if t is not None))
+    return GenerateInvocation(text=str(envelope["result"]), cost_usd=cost, tokens=tokens)
 
 
 def _build_env() -> dict[str, str]:
@@ -48,7 +80,7 @@ def _write_context(context: AssembledContext, feedback: list[str]) -> str:
 class ClaudeGenerateRunner:
     """`GenerateRunner` over the `claude` CLI subprocess."""
 
-    def invoke(self, context: AssembledContext, feedback: list[str]) -> str:
+    def invoke(self, context: AssembledContext, feedback: list[str]) -> GenerateInvocation:
         context_path = _write_context(context, feedback)
         argv = [
             f"/generate {context_path}" if part == "/generate" else part
@@ -76,4 +108,4 @@ class ClaudeGenerateRunner:
             raise GenerateTransportError(
                 f"claude /generate exited {result.returncode}: {result.stderr[:500]}"
             )
-        return result.stdout
+        return _parse_output(result.stdout)

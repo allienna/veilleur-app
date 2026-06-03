@@ -26,9 +26,11 @@ export const router = createBrowserRouter([
       },
       {
         path: "supervision",
-        lazy: async () => ({
-          Component: (await import("@/routes/SupervisionPlaceholder")).default,
-        }),
+        lazy: async () => ({ Component: (await import("@/routes/Supervision")).default }),
+      },
+      {
+        path: "runs/:date",
+        lazy: async () => ({ Component: (await import("@/routes/Run")).default }),
       },
     ],
   },

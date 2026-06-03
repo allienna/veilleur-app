@@ -105,6 +105,7 @@ Decomposes the PRD into vertically-sliced features ordered by dependency. Each f
 **Delivers**: Operator can supervise a live run from iPhone and trigger one manually.
 **Surfaces**: `pwa`
 **Estimated size**: L
+**Status**: In Progress
 
 ### F-012: Push notifications (Web Push + VAPID)
 **Summary**: VAPID keys in Secret Manager. Service worker push handler. Push subscription persisted in Firestore. Minion sends via `pywebpush` on run completion (silent on `skipped: no_sources`). README documents iOS 16.4+ home-screen install as onboarding prerequisite.

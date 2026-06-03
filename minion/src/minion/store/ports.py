@@ -34,9 +34,16 @@ class RunStore(Protocol):
         ...
 
     def finalize_run(
-        self, date: str, status: RunStatus, ended_at: datetime, error: str | None
+        self,
+        date: str,
+        status: RunStatus,
+        ended_at: datetime,
+        error: str | None,
+        cost_usd: float | None = None,
+        tokens: int | None = None,
     ) -> None:
-        """Set the terminal `status`, `endedAt`, and run-level `error` on `runs/{date}`."""
+        """Set the terminal `status`, `endedAt`, run-level `error`, and the LLM `cost_usd`/`tokens`
+        on `runs/{date}`. Cost/tokens are None when the run never reached `generate` (F-011)."""
         ...
 
     def get_run(self, date: str) -> Run | None:

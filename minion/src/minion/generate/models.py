@@ -45,6 +45,21 @@ class ArticleFrontmatter(BaseModel):
     kind: str = "veille"
 
 
+class GenerateInvocation(BaseModel):
+    """One `/generate` CLI call's result: the artefact text plus usage telemetry (F-011 AD-5).
+
+    `text` is the raw artefact the step parses into a `GeneratedArticle`. `cost_usd`/`tokens`
+    come from `claude --output-format json` (`total_cost_usd` + `usage`); both are None when the
+    CLI did not report them (older/plain output shape — the fallback path, F-011 plan AD-5).
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    text: str
+    cost_usd: float | None = None
+    tokens: int | None = None
+
+
 class GeneratedArticle(BaseModel):
     """The artefact produced by one `/generate` call (theme + article + linkedin + image prompt)."""
 

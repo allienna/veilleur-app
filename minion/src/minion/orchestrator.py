@@ -16,6 +16,8 @@ Invariants enforced here (constitution §2.7-§2.9):
 
 from __future__ import annotations
 
+from typing import cast
+
 from minion.clock import Clock, new_run_id
 from minion.logging import bind
 from minion.models import ALREADY_RUNNING, Lock, Run, RunStatus, RunStep
@@ -119,7 +121,11 @@ def run_pipeline(
             # Downgrade only a clean success (a failure/terminal status takes precedence, AD-4).
             status = RunStatus.success_with_warnings
             run_error = warning_reason
-        run_store.finalize_run(date, status, clock.now(), run_error)
+        # LLM cost/tokens surfaced by the generate step (F-011 AD-5); absent (None) when the run
+        # never reached `generate` — e.g. skipped/no_sources or an early-step failure.
+        cost_usd = cast("float | None", data.get("costUsd"))
+        tokens = cast("int | None", data.get("tokens"))
+        run_store.finalize_run(date, status, clock.now(), run_error, cost_usd, tokens)
         log.info("run finished", extra={"status": status.value})
 
         final = run_store.get_run(date)
