@@ -1,8 +1,8 @@
 # Veilleur-app — Feature Roadmap
 
 **Generated from**: PRD.md, specs/constitution.md, DESIGN.md
-**Last updated**: 2026-05-19
-**Status**: Draft
+**Last updated**: 2026-06-03
+**Status**: Approved
 
 Decomposes the PRD into vertically-sliced features ordered by dependency. Each feature is self-contained, demoable, and sized for 0.5–2 days of work with Claude Code. Calendar context: production target **2026-05-20** (M7), DevLille talk **2026-06-11** (M11) — see §Milestones and the calendar note at the end.
 
@@ -24,7 +24,7 @@ Decomposes the PRD into vertically-sliced features ordered by dependency. Each f
 **Delivers**: Compilable empty workspaces; `pnpm`, `uv`, `ruff`, `pyright` configured; CI scaffolding (`build-minion`, `deploy-pwa`, `validate-specs` workflows as stubs); allowed-email invariant enforced in CI.
 **Surfaces**: repo-wide
 **Estimated size**: M
-**Status**: In Progress
+**Status**: Complete (merged)
 
 ### F-003: Minion orchestrator core (state machine + Firestore)
 **Summary**: Python 3.12 orchestrator with the 9-step state machine, per-step Firestore writes (`status`, `started_at`, `ended_at`, `error?`), Firestore concurrency lock, idempotent runs by date, Pydantic models for every I/O boundary, structured logging with `runId`. Real steps are stubs returning canned data.
@@ -42,7 +42,7 @@ Decomposes the PRD into vertically-sliced features ordered by dependency. Each f
 **Delivers**: First half of the daily run reaches "context assembly" with real upstream data; unit tests with mocked APIs cover happy path + degraded thresholds.
 **Surfaces**: `minion`
 **Estimated size**: M
-**Status**: In Progress
+**Status**: Complete (merged)
 
 ### F-005: Agentic step `/generate` (the talk artefact)
 **Summary**: `claude -p /generate` integration over the versioned `.claude/commands/generate.md` slash command (installed via the `allienna/claude-feature-flow` plugin per constitution §3). Output validation enforces Astro frontmatter, LinkedIn ≤3000 chars, image prompt ≤1000 chars, theme allowlist. Deterministic copyright post-validator (≤30-word quotes, max 1/source, n-gram overlap). Agentic retry on validation failure (max 2).
@@ -51,7 +51,7 @@ Decomposes the PRD into vertically-sliced features ordered by dependency. Each f
 **Delivers**: End-to-end article + LinkedIn + image-prompt generation. **The runtime literally executes a versioned spec — this is the on-stage thesis incarnated.**
 **Surfaces**: `minion`
 **Estimated size**: L
-**Status**: In Progress
+**Status**: Complete (merged)
 
 ### F-006: Imagen 4 Fast + GitHub publish
 **Summary**: Vertex AI Imagen (`imagen-4.0-fast-generate-001`) image generation with moderation-rejection fallback (agentic prompt rewrite → placeholder image, status `success_with_warnings`). GitHub Contents API commit to `allienna/allienna.github.io` under `veilleur/site/content/posts/` + `public/images/posts/`, idempotent by date, 3-retry backoff.
@@ -60,7 +60,7 @@ Decomposes the PRD into vertically-sliced features ordered by dependency. Each f
 **Delivers**: First fully-autonomous local run produces a real published article on the public Astro site.
 **Surfaces**: `minion`, writes to external `astro-site`
 **Estimated size**: M
-**Status**: In Progress
+**Status**: Complete (merged)
 
 ### F-007: Cloud Run deployment + Cloud Scheduler + kill-switch
 **Summary**: Multi-stage Dockerfile (Python 3.12 + Node 20 + git + `@anthropic-ai/claude-code`). Terraform (or gcloud scripts) for: Cloud Run Job, Cloud Scheduler cron at 06:00 Europe/Paris, service accounts, IAM bindings, Firestore + Vertex enablement. Budget kill-switch: Cloud Billing → Pub/Sub → Cloud Function disabling Scheduler at 100% of 30€/mo cap.
@@ -69,7 +69,7 @@ Decomposes the PRD into vertically-sliced features ordered by dependency. Each f
 **Delivers**: First scheduler-fired production run. **This is M7 — production live.**
 **Surfaces**: `minion` infra
 **Estimated size**: M
-**Status**: In Progress
+**Status**: Complete (merged)
 
 ### F-008: trigger-api micro-service
 **Summary**: Cloud Run service (~50 LOC) that verifies Firebase Auth JWT, asserts `email == <allowed> && email_verified`, invokes the Cloud Run Job with payload, returns `runId`. Single endpoint `POST /trigger`. Allowed-email constant pinned per F-002 invariant.
@@ -78,7 +78,7 @@ Decomposes the PRD into vertically-sliced features ordered by dependency. Each f
 **Delivers**: Manual trigger callable with a valid JWT from any HTTPS client (curl + Postman first; PWA wires it in F-011).
 **Surfaces**: `minion` (sibling service)
 **Estimated size**: S
-**Status**: In Progress
+**Status**: Complete (merged)
 
 ### F-009: PWA scaffold + Auth + Reading
 **Summary**: React 18 + TS + Vite + Tailwind + shadcn/ui + `vite-plugin-pwa` on Firebase Hosting. Firebase Auth (Google sign-in), Firestore Security Rules (`email == <allowed> && email_verified`), client soft-check + `UnauthorizedScreen`. AppShell + AppHeader + Today + History views. ArticleCard, SkeletonCard, TagPill, ArticleView, EmptyState. Reads from Firestore (not Astro). LCP ≤2s on iPhone 4G.
@@ -105,7 +105,7 @@ Decomposes the PRD into vertically-sliced features ordered by dependency. Each f
 **Delivers**: Operator can supervise a live run from iPhone and trigger one manually.
 **Surfaces**: `pwa`
 **Estimated size**: L
-**Status**: In Progress
+**Status**: Complete (merged)
 
 ### F-012: Push notifications (Web Push + VAPID)
 **Summary**: VAPID keys in Secret Manager. Service worker push handler. Push subscription persisted in Firestore. Minion sends via `pywebpush` on run completion (silent on `skipped: no_sources`). README documents iOS 16.4+ home-screen install as onboarding prerequisite.
@@ -123,6 +123,7 @@ Decomposes the PRD into vertically-sliced features ordered by dependency. Each f
 **Delivers**: Talk-ready repository + safety net.
 **Surfaces**: `minion`, `pwa`, repo
 **Estimated size**: M
+**Status**: In Progress
 
 ### F-014: Live-demo reserved track (stub by M9)
 **Summary**: Reserved `specs/F-014-{name}/` directory created with placeholder `spec.md`. Scope intentionally TBD until stage rehearsal. This is the track exercised live during the talk via `/specify` or `/implement`.
@@ -213,4 +214,6 @@ Burn-in window shrinks from 21 to ~13 days. The PRD acceptance "≥18/21 OK on r
 
 ## Status
 
-Roadmap status: **Draft**. Approve before running `/specify F-001` to start the first track.
+Roadmap status: **Approved**. F-001 through F-012 are merged; F-013 (hardening + burn-in) is in
+progress; F-014 (live-demo stub) is reserved. Per-feature statuses above are reconciled with shipped
+reality (F-013 AC-7).

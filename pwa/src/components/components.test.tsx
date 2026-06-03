@@ -8,10 +8,15 @@ import { ArticleCard } from "@/components/ArticleCard";
 import { ArticleView } from "@/components/ArticleView";
 import { EmptyState } from "@/components/EmptyState";
 import { ErrorBanner } from "@/components/ErrorBanner";
+import { RunTimeline } from "@/components/RunTimeline";
 import { SignInScreen } from "@/components/SignInScreen";
 import { TagPill } from "@/components/TagPill";
 import { UnauthorizedScreen } from "@/components/UnauthorizedScreen";
-import { makeArticle } from "@/test/fixtures";
+import { REAUTH_RUNBOOK_URL } from "@/config";
+import { makeArticle, makeRun } from "@/test/fixtures";
+
+// RunTimeline pulls @/data/runs (→ @/firebase); avoid initializing a real Firebase app in tests.
+vi.mock("@/firebase", () => ({ db: {} }));
 
 describe("TagPill", () => {
   it("renders the theme label", () => {
@@ -32,6 +37,36 @@ describe("ErrorBanner", () => {
   it("renders an alert with the message (DESIGN §4 Error)", () => {
     render(<ErrorBanner message="Mode hors ligne" variant="info" />);
     expect(screen.getByRole("alert")).toHaveTextContent("Mode hors ligne");
+  });
+});
+
+describe("RunTimeline auth-failure banner (F-013 FR-1)", () => {
+  it("links to the re-auth runbook when a run fails on an auth error", () => {
+    render(
+      <RunTimeline
+        run={makeRun({
+          status: "failure",
+          error: "gmail: ('invalid_grant: Token has been expired or revoked.',)",
+        })}
+      />,
+    );
+    const link = screen.getByRole("link", { name: /ré-authentification/i });
+    expect(link).toHaveAttribute("href", REAUTH_RUNBOOK_URL);
+  });
+
+  it("shows no runbook link for a generic (non-auth) failure", () => {
+    render(
+      <RunTimeline
+        run={makeRun({ status: "failure", error: "jina: scrape threshold not met (3/10)" })}
+      />,
+    );
+    expect(screen.getByRole("alert")).toHaveTextContent("scrape threshold not met");
+    expect(screen.queryByRole("link", { name: /ré-authentification/i })).not.toBeInTheDocument();
+  });
+
+  it("shows no error banner when the run has no run-level error", () => {
+    render(<RunTimeline run={makeRun({ status: "success_with_warnings", error: null })} />);
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 });
 

@@ -1,12 +1,16 @@
 # Veilleur Minion
 
-The Minion is the one-shot Cloud Run Job that runs the daily Veilleur pipeline. This
-directory currently holds the **Hello-Veilleur spike** (feature F-001): a minimal
-container that exercises the full external-system chain — Gmail, Vertex AI (Imagen),
-Firestore, GitHub, and `claude -p` — end-to-end, both locally and on Cloud Run. It does
-not yet read newsletters or write articles; that is F-003+.
+The Minion is the one-shot Cloud Run Job that runs the daily Veilleur pipeline. It is
+**feature-complete** (F-003 → F-008): the nine-step state machine pulls Gmail newsletters,
+scrapes the linked articles (Jina), assembles context, runs the agentic `/generate` step
+(`claude -p`), validates output + copyright, generates the Imagen hero image, commits the
+article to the publish repo, and writes the result + run state to Firestore — with push
+notifications on completion (F-012). See the [top-level README](../README.md) for the whole
+system and [`infra/RUNBOOK.md`](../infra/RUNBOOK.md) for operating it in production
+(bring-up, deploy, **OAuth re-auth**, kill-switch, replay).
 
-## What the spike proves
+The `minion.spike` module (feature F-001) is retained as the de-risking spike that first
+proved the plumbing end-to-end:
 
 - Claude Code Max OAuth works **headlessly inside the container** via
   `CLAUDE_CODE_OAUTH_TOKEN` (from Secret Manager), with **no `ANTHROPIC_API_KEY`** (PRD R1).
@@ -16,9 +20,13 @@ not yet read newsletters or write articles; that is F-003+.
 ## CLI
 
 ```
-python -m minion.spike run [--date YYYY-MM-DD]   # Gmail -> Imagen -> Firestore -> GitHub
-python -m minion.spike claude-probe              # claude -p must return PONG
+python -m minion run --date YYYY-MM-DD           # the daily pipeline (idempotent by date)
+python -m minion.spike run [--date YYYY-MM-DD]   # F-001 spike: Gmail -> Imagen -> Firestore -> GitHub
+python -m minion.spike claude-probe              # F-001 spike: claude -p must return PONG
 ```
+
+> **Auth recovery:** if a run hard-fails on `gmail` (revoked refresh token) or `generate`
+> (expired Claude OAuth), follow [`infra/RUNBOOK.md` §3 OAuth re-auth](../infra/RUNBOOK.md#3-oauth-re-auth-gmail--anthropic--prd-r3).
 
 ## Prerequisites (one-time)
 
