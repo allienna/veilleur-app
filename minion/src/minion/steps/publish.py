@@ -22,7 +22,7 @@ from importlib.resources import files
 from minion import config
 from minion.generate.models import GeneratedArticle
 from minion.models import StepName
-from minion.publish.models import ArticleDoc, CommitResult, ImageArtifact
+from minion.publish.models import ArticleDoc, CommitResult, Frontmatter, ImageArtifact
 from minion.publish.ports import (
     ContentRepoError,
     ContentRepository,
@@ -131,7 +131,8 @@ class GithubStep:
             date=ctx.date,
             slug=slug,
             theme=article.theme,
-            frontmatter=article.frontmatter,
+            # generate-pipeline ArticleFrontmatter → shared Frontmatter (F-009 AD-1)
+            frontmatter=Frontmatter.model_validate(article.frontmatter.model_dump()),
             body=article.body,
             linkedin=article.linkedin,
             image=image.filename,
@@ -182,7 +183,8 @@ class PublishStep:
             date=ctx.date,
             slug=slug,
             theme=article.theme,
-            frontmatter=article.frontmatter,
+            # generate-pipeline ArticleFrontmatter → shared Frontmatter (F-009 AD-1)
+            frontmatter=Frontmatter.model_validate(article.frontmatter.model_dump()),
             body=article.body,
             linkedin=article.linkedin,
             image=image.filename,

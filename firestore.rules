@@ -13,7 +13,15 @@ service cloud.firestore {
         && request.auth.token.email == "aurelien.allienne@gmail.com";
     }
 
-    // Deny-by-default skeleton. Per-collection read/write rules land in F-009.
+    // Published articles the PWA reads (F-009 FR-4). Read-only for the allowed
+    // operator; client writes are always denied — only the Minion job's privileged
+    // service account writes articles, server-side, bypassing these rules.
+    match /articles/{date} {
+      allow read: if isAllowedOperator();
+      allow write: if false;
+    }
+
+    // Deny-by-default for every other collection. `runs/*` reads land in F-011.
     match /{document=**} {
       allow read, write: if false;
     }

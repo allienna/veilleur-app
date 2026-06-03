@@ -18,6 +18,7 @@ const PINNED = "datamodel-code-generator==0.26.3";
 const targets = [
   ["run-status.json", "run_status.py"],
   ["run.json", "run.py"],
+  ["article.json", "article.py"],
 ];
 
 for (const [schema, out] of targets) {

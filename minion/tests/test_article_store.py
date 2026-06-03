@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-from minion.generate.models import ArticleFrontmatter
-from minion.publish.models import ArticleDoc
+from minion.publish.models import ArticleDoc, Frontmatter
 from minion.store.memory import InMemoryArticleStore
 
 DATE = "2026-06-01"
@@ -14,7 +13,7 @@ def _doc(**overrides: object) -> ArticleDoc:
         "date": DATE,
         "slug": "a-post",
         "theme": "ai",
-        "frontmatter": ArticleFrontmatter(title="T", date=DATE, description="d", tags=["ai"]),
+        "frontmatter": Frontmatter(title="T", date=DATE, description="d", tags=["ai"]),
         "body": "body",
         "linkedin": "post",
         "image": f"{DATE}.webp",

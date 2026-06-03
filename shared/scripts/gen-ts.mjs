@@ -30,6 +30,7 @@ const options = {
 const targets = [
   ["run-status.json", "run-status.ts"],
   ["run.json", "run.ts"],
+  ["article.json", "article.ts"],
 ];
 
 for (const [schema, out] of targets) {

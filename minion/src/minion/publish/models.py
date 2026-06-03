@@ -2,15 +2,22 @@
 
 These cross the `imagen` → `github` → `publish` step boundaries in the orchestrator data bag;
 every value is an `extra="forbid"` Pydantic model so a malformed publish fails loudly
-(constitution §4). `ArticleDoc` is the persisted shape the PWA reads (F-009); it is kept
-Minion-internal until F-009 consumes it, when it may be promoted to a shared `article.json`.
+(constitution §4).
+
+`ArticleDoc` is the persisted shape the PWA reads. As of F-009 (Q1) it is promoted to the
+shared `article.json` schema (single source of truth, codegen → TS + Pydantic) and re-exported
+here under its historical name so the publish/store call sites are unchanged. The nested
+`Frontmatter` is the generated counterpart of `minion.generate.models.ArticleFrontmatter`;
+the publish step maps between them at the construction boundary.
 """
 
 from __future__ import annotations
 
 from pydantic import BaseModel, ConfigDict
+from veilleur_shared.article import Article as ArticleDoc
+from veilleur_shared.article import Frontmatter
 
-from minion.generate.models import ArticleFrontmatter
+__all__ = ["ArticleDoc", "CommitResult", "Frontmatter", "ImageArtifact"]
 
 
 class ImageArtifact(BaseModel):
@@ -30,19 +37,3 @@ class CommitResult(BaseModel):
 
     path: str
     sha: str
-
-
-class ArticleDoc(BaseModel):
-    """The published article persisted to `articles/{date}` for the PWA to read (FR-5)."""
-
-    model_config = ConfigDict(extra="forbid")
-
-    date: str
-    slug: str
-    theme: str
-    frontmatter: ArticleFrontmatter
-    body: str
-    linkedin: str
-    image: str  # hero image filename (mirrors frontmatter.image)
-    commit_sha: str | None = None  # set by `publish` once the GitHub commit lands
-    published: bool = False  # False = recoverable pre-commit persist; True = live on the site
