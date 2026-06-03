@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -70,6 +70,24 @@ describe("ShareSheet — open flow via ArticleView (AC-1)", () => {
     expect(screen.getByRole("dialog")).toBeInTheDocument();
     await userEvent.keyboard("{Escape}");
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+  });
+
+  it("traps Tab focus inside the dialog (DESIGN §5)", async () => {
+    render(<ArticleView article={makeArticle()} />);
+    await userEvent.click(screen.getByRole("button", { name: "Partager" }));
+    const dialog = screen.getByRole("dialog");
+    const close = within(dialog).getByRole("button", { name: "Fermer" });
+    const save = within(dialog).getByRole("button", { name: /Enregistrer l'image/ });
+
+    // Tab from the last focusable wraps to the first (the close button).
+    save.focus();
+    fireEvent.keyDown(document, { key: "Tab" });
+    expect(document.activeElement).toBe(close);
+
+    // Shift+Tab from the first focusable wraps to the last.
+    close.focus();
+    fireEvent.keyDown(document, { key: "Tab", shiftKey: true });
+    expect(document.activeElement).toBe(save);
   });
 });
 

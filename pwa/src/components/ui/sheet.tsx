@@ -29,7 +29,7 @@ export interface SheetProps {
 
 // `Sheet` — hand-rolled iOS-style bottom sheet (DESIGN §3; `shadow.lg`, `radius.xl` top edge).
 // No Radix: the `ui/` inventory is hand-rolled with `cn` + tokens; we replicate the modal
-// a11y we need (role=dialog, aria-modal, focus capture/restore, Escape + overlay dismiss).
+// a11y we need (role=dialog, aria-modal, Tab focus trap + restore, Escape + overlay dismiss).
 export function Sheet({ open, onOpenChange, title, children }: SheetProps): JSX.Element | null {
   const reducedMotion = usePrefersReducedMotion();
   const panelRef = useRef<HTMLDivElement>(null);
@@ -43,7 +43,33 @@ export function Sheet({ open, onOpenChange, title, children }: SheetProps): JSX.
     setEntered(true);
     panelRef.current?.focus();
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onOpenChange(false);
+      if (e.key === "Escape") {
+        onOpenChange(false);
+        return;
+      }
+      // Focus trap (DESIGN §5 — required): keep Tab focus inside the dialog while open.
+      if (e.key === "Tab") {
+        const panel = panelRef.current;
+        if (!panel) return;
+        const focusable = panel.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+        );
+        if (focusable.length === 0) {
+          e.preventDefault();
+          panel.focus();
+          return;
+        }
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        const active = document.activeElement;
+        if (e.shiftKey && (active === first || active === panel)) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && active === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
     };
     document.addEventListener("keydown", onKeyDown);
     const prevOverflow = document.body.style.overflow;
