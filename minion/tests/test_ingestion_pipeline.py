@@ -1,7 +1,7 @@
 """End-to-end ingestion through `run_pipeline` with fake clients (T-3.5).
 
 Covers the six spec scenarios: happy path, threshold-pass, threshold-fail, empty-mailbox
-skip, paywall exclusion, and denylist filtering — driven through the real GmailStep / JinaStep
+skip, paywall exclusion, and denylist filtering — driven through the real GmailStep / ScrapeStep
 / ValidateInputStep wired by `build_pipeline`, over the in-memory stores from conftest.
 """
 
@@ -15,7 +15,7 @@ import pytest
 from minion import config
 from minion.config import PARIS_TZ
 from minion.generate.fakes import FakeGenerateRunner
-from minion.ingest.fakes import FakeGmailClient, FakeJinaClient
+from minion.ingest.fakes import FakeGmailClient, FakeScraperClient
 from minion.ingest.models import Newsletter, ScrapedSource, SourceOutcome
 from minion.models import Run, RunStatus
 from minion.orchestrator import run_pipeline
@@ -49,13 +49,13 @@ def _newsletter(sender: str, urls: list[str]) -> Newsletter:
 
 def _jina_with_outcomes(
     *, failed: list[str] | None = None, paywalled: list[str] | None = None
-) -> FakeJinaClient:
+) -> FakeScraperClient:
     results = {u: ScrapedSource(url=u, outcome=SourceOutcome.failed) for u in failed or []}
     results |= {u: ScrapedSource(url=u, outcome=SourceOutcome.paywalled) for u in paywalled or []}
-    return FakeJinaClient(results=results)
+    return FakeScraperClient(results=results)
 
 
-def _run(gmail: FakeGmailClient, jina: FakeJinaClient, run_store, lock_store, clock) -> Run:
+def _run(gmail: FakeGmailClient, jina: FakeScraperClient, run_store, lock_store, clock) -> Run:
     runner = FakeGenerateRunner(outputs=[_VALID_ARTIFACT])
     steps = build_pipeline(
         gmail,
@@ -73,7 +73,7 @@ def test_happy_path_succeeds_through_all_nine_steps(run_store, lock_store, clock
     urls = [f"https://x.com/{i}" for i in range(5)]
     final = _run(
         FakeGmailClient([_newsletter("a@x.com", urls)]),
-        FakeJinaClient(),
+        FakeScraperClient(),
         run_store,
         lock_store,
         clock,
@@ -109,7 +109,7 @@ def test_below_threshold_fails_the_run(run_store, lock_store, clock) -> None:
 
 
 def test_empty_mailbox_skips_run(run_store, lock_store, clock) -> None:
-    final = _run(FakeGmailClient([]), FakeJinaClient(), run_store, lock_store, clock)
+    final = _run(FakeGmailClient([]), FakeScraperClient(), run_store, lock_store, clock)
     assert final.status is RunStatus.skipped
     assert final.error == "no_sources"
     names = [s.name.value for s in final.steps]
@@ -134,7 +134,7 @@ def test_denylisted_sender_is_filtered(
     gmail = FakeGmailClient(
         [_newsletter("spam@denied.com", [f"https://denied.com/{i}" for i in range(5)])]
     )
-    final = _run(gmail, FakeJinaClient(), run_store, lock_store, clock)
+    final = _run(gmail, FakeScraperClient(), run_store, lock_store, clock)
     # The only sender is denied → no URLs → skipped, proving the filter took effect end-to-end.
     assert final.status is RunStatus.skipped
     assert final.error == "no_sources"

@@ -42,9 +42,9 @@ Veilleur-app is a mono-tenant, mono-user automated tech-watch pipeline: a Stripe
 
 ## 4. Coding Standards
 
-- **Python**: Pydantic models for every Minion I/O boundary (Gmail payloads, Jina output, `/generate` outputs, Firestore docs). `uv` as package manager. `ruff` for lint + format.
+- **Python**: Pydantic models for every Minion I/O boundary (Gmail payloads, scrape output, `/generate` outputs, Firestore docs). `uv` as package manager. `ruff` for lint + format.
 - **TypeScript**: `strict: true`, no `any`, no `// @ts-ignore`. ESLint + Prettier.
-- **Module shape (Minion)**: one file per step under `minion/src/minion/` (`gmail.py`, `jina.py`, `imagen.py`, …). Each step takes a typed input, returns a typed output, writes its Firestore state. No cross-step state in globals.
+- **Module shape (Minion)**: one file per step under `minion/src/minion/` (`gmail.py`, `scraper.py`, `imagen.py`, …). Each step takes a typed input, returns a typed output, writes its Firestore state. No cross-step state in globals.
 - **Slash commands are production code**: `/generate` is a Veilleur-domain command vendored in this repo at `minion/.claude/commands/generate.md` (ported from the legacy Veilleur v1 app) and copied into the Minion image. The runtime literally executes this versioned spec — treat it as production code, not a free-floating script: changes go through a normal PR + review here, and its output contract is enforced by the deterministic validators in `minion/src/minion/generate/`. (The generic spec-workflow commands — `/specify`, `/plan`, `/tasks`, … — come from the separate [`allienna/claude-feature-flow`](https://github.com/allienna/claude-feature-flow) plugin; `/generate` is **not** one of them.)
 - **Firestore access in PWA**: typed accessors only, no inline `doc()` calls inside React components.
 - **Logging**: structured logs only (`runId`, step, level). No `print` / `console.log` in committed code.

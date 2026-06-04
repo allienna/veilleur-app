@@ -9,8 +9,8 @@ from minion.cli import cli
 from minion.clock import Clock
 from minion.generate.fakes import FakeGenerateRunner
 from minion.generate.ports import GenerateRunner
-from minion.ingest.fakes import FakeGmailClient, FakeJinaClient
-from minion.ingest.ports import GmailClient, JinaClient
+from minion.ingest.fakes import FakeGmailClient, FakeScraperClient
+from minion.ingest.ports import GmailClient, ScraperClient
 from minion.notify import Notifier
 from minion.publish.fakes import (
     FakeContentRepository,
@@ -70,12 +70,17 @@ def test_wired_run_exits_zero(monkeypatch) -> None:  # type: ignore[no-untyped-d
         return InMemoryRunStore(), InMemoryLockStore(clock), InMemoryArticleStore()
 
     def fake_clients() -> tuple[
-        GmailClient, JinaClient, GenerateRunner, ImageGenerator, PromptRewriter, ContentRepository
+        GmailClient,
+        ScraperClient,
+        GenerateRunner,
+        ImageGenerator,
+        PromptRewriter,
+        ContentRepository,
     ]:
         # Empty mailbox → run skips at validate_input, before generate/imagen/github/publish.
         return (
             FakeGmailClient(),
-            FakeJinaClient(),
+            FakeScraperClient(),
             FakeGenerateRunner(),
             FakeImageGenerator(),
             FakePromptRewriter(),

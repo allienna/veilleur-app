@@ -2,7 +2,7 @@
 
 These replace the F-003 stub bodies for the first three pipeline slots; the remaining six
 steps stay stubs (F-005/F-006). Each step depends only on an injected client Protocol
-(`GmailClient` / `JinaClient`) so the pipeline runs hermetically under fakes (AD-1/AD-5).
+(`GmailClient` / `ScraperClient`) so the pipeline runs hermetically under fakes (AD-1/AD-5).
 
 Data bag contract between the steps:
 - `gmail`          → writes `newsletters: list[Newsletter]`, `candidate_urls: list[str]`
@@ -18,7 +18,7 @@ from typing import cast
 
 from minion import config
 from minion.ingest.models import SourceSet
-from minion.ingest.ports import GmailClient, JinaClient
+from minion.ingest.ports import GmailClient, ScraperClient
 from minion.models import RunStatus, StepName
 from minion.steps.base import StepContext, StepResult
 
@@ -81,17 +81,19 @@ class GmailStep:
 
 
 @dataclass
-class JinaStep:
+class ScrapeStep:
     """Step 2: scrape the candidate URLs to clean Markdown, preserving per-source outcomes."""
 
-    client: JinaClient
+    client: ScraperClient
+    # `jina` is the stable wire/step name in the shared schema (shared/schema/run.json) and the
+    # PWA's STEP_ORDER — kept across the F-015 engine swap so run-doc history stays consistent.
     name: StepName = StepName.jina
 
     def run(self, ctx: StepContext) -> StepResult:
         urls = cast("list[str]", ctx.data.get("candidate_urls", []))
         sources = SourceSet(sources=self.client.scrape(urls))
         ctx.log.info(
-            "jina scraped",
+            "scrape complete",
             extra={
                 "ok": sources.ok_count,
                 "paywalled": sources.paywalled_count,
@@ -120,7 +122,7 @@ class ValidateInputStep:
         fraction = ok / total
         if ok < config.MIN_SOURCES_OK or fraction < config.MIN_SOURCES_FRACTION:
             # Include the paywalled/failed split so a thin-news day (mostly paywalled) is
-            # distinguishable from scrape trouble (mostly failed — e.g. Jina rate-limiting).
+            # distinguishable from scrape trouble (mostly failed — fetch errors / dead links).
             raise InsufficientSourcesError(
                 f"insufficient_sources: {ok}/{total} ok "
                 f"({sources.paywalled_count} paywalled, {sources.failed_count} failed; "

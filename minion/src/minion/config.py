@@ -45,16 +45,6 @@ EXCLUDED_SENDERS: frozenset[str] = frozenset()
 MAX_NEWSLETTERS: int = 50
 MAX_URLS: int = 100
 
-# Jina Reader (PRD §5: free tier, no API key). Each candidate URL is GET-ed as
-# `JINA_BASE_URL + url`.
-JINA_BASE_URL: str = "https://r.jina.ai/"
-JINA_TIMEOUT: timedelta = timedelta(seconds=30)  # per-request HTTP timeout
-JINA_MAX_RETRIES: int = 2  # retries after the first attempt on 429 / transient errors
-JINA_BACKOFF_BASE: timedelta = timedelta(seconds=1)  # exponential backoff unit
-JINA_WORKERS: int = 6  # bounded concurrency for the scrape pool (AD-7)
-# Overall scrape budget (PRD §4: ≤3 min target, 5 min ceiling).
-JINA_DEADLINE: timedelta = timedelta(minutes=4)
-
 # Substrings in the fetched raw HTML that signal paywalled content (FR-A3). Recalibrated for
 # F-015 local extraction: the markers are matched against the origin server's raw HTML (before
 # trafilatura, which may strip the paywall notice), not Jina's cleaned output. Starter set —

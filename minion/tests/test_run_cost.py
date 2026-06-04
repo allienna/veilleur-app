@@ -12,7 +12,7 @@ from typing import Any
 
 from minion.config import PARIS_TZ
 from minion.generate.fakes import FakeGenerateRunner
-from minion.ingest.fakes import FakeGmailClient, FakeJinaClient
+from minion.ingest.fakes import FakeGmailClient, FakeScraperClient
 from minion.ingest.models import Newsletter
 from minion.models import Run, RunStatus
 from minion.orchestrator import run_pipeline
@@ -45,7 +45,7 @@ def _run(runner: FakeGenerateRunner, run_store, lock_store, clock, *, newsletter
     )
     steps = build_pipeline(
         gmail,
-        FakeJinaClient(),
+        FakeScraperClient(),
         runner,
         FakeImageGenerator(outcomes=[b"IMG"]),
         FakePromptRewriter(),

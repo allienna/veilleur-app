@@ -18,7 +18,7 @@ from minion import config
 from minion.config import PARIS_TZ
 from minion.generate.fakes import FakeGenerateRunner
 from minion.generate.ports import GenerateTransportError
-from minion.ingest.fakes import FakeGmailClient, FakeJinaClient
+from minion.ingest.fakes import FakeGmailClient, FakeScraperClient
 from minion.ingest.models import Newsletter, ScrapedSource, SourceOutcome
 from minion.models import Run, RunStatus
 from minion.orchestrator import run_pipeline
@@ -48,14 +48,19 @@ def _artifact(**overrides: Any) -> str:
 
 
 def _run(
-    runner: FakeGenerateRunner, run_store, lock_store, clock, *, jina: FakeJinaClient | None = None
+    runner: FakeGenerateRunner,
+    run_store,
+    lock_store,
+    clock,
+    *,
+    jina: FakeScraperClient | None = None,
 ) -> Run:
     gmail = FakeGmailClient(
         [Newsletter(sender="a@x.com", subject="s", received_at=T0, candidate_urls=URLS)]
     )
     steps = build_pipeline(
         gmail,
-        jina or FakeJinaClient(),
+        jina or FakeScraperClient(),
         runner,
         FakeImageGenerator(outcomes=[b"IMG"]),
         FakePromptRewriter(),
@@ -108,7 +113,7 @@ def test_unknown_theme_normalized_run_succeeds(run_store, lock_store, clock) -> 
 
 def test_copyright_reproduction_exhausts_retries_and_fails(run_store, lock_store, clock) -> None:
     reproduced = "the quick brown fox jumps over the lazy dog again and again over the hill today"
-    jina = FakeJinaClient(
+    jina = FakeScraperClient(
         results={
             URLS[0]: ScrapedSource(
                 url=URLS[0], outcome=SourceOutcome.ok, title="Src", markdown=reproduced

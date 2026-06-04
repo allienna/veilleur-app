@@ -1,7 +1,7 @@
-"""Ingestion ports — the only Gmail/Jina surface the ingestion steps know about (F-004 AD-1).
+"""Ingestion ports — the only Gmail/scrape surface the ingestion steps know about (F-004 AD-1).
 
 Mirrors `store/ports.py`: the steps depend on these Protocols, the production clients
-(`gmail.py`, `jina.py`) implement them, and `fakes.py` provides hermetic test doubles so
+(`gmail.py`, `scraper.py`) implement them, and `fakes.py` provides hermetic test doubles so
 the whole pipeline can run without network access.
 """
 
@@ -21,8 +21,8 @@ class GmailClient(Protocol):
         ...
 
 
-class JinaClient(Protocol):
-    """Scrapes candidate URLs to clean Markdown via Jina Reader."""
+class ScraperClient(Protocol):
+    """Scrapes candidate URLs to clean Markdown (local extraction — F-015)."""
 
     def scrape(self, urls: list[str]) -> list[ScrapedSource]:
         """Scrape each URL, returning one `ScrapedSource` per input with an `ok` / `paywalled`

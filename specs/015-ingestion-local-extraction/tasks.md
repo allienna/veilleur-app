@@ -30,21 +30,21 @@
 
 ## Phase 2: Coherence rename (FR-4)
 
-- [ ] **T-2.1**: Rename the scrape port `JinaClient` → `ScraperClient`
+- [x] **T-2.1**: Rename the scrape port `JinaClient` → `ScraperClient`
   - **Do**: In `minion/src/minion/ingest/ports.py` rename the Protocol + de-Jina the docstring. Update `ingest/__init__.py`, `ingest/fakes.py` (fake scraper class name), and `scraper.py`'s implements-reference. Update every importer/type annotation (`cli.py`, `steps/ingestion.py`, tests: `test_ingestion_pipeline`, `test_run_cost`, `test_steps`, `test_generation_pipeline`, `test_publish_integration`, etc.).
   - **Test**: `cd minion && grep -rn "JinaClient" src tests` returns nothing; `uv run pyright`.
 
-- [ ] **T-2.2**: Rename `JINA_*` config → `SCRAPE_*`; drop `JINA_BASE_URL`
+- [x] **T-2.2**: Rename `JINA_*` config → `SCRAPE_*`; drop `JINA_BASE_URL`
   - **Do**: In `config.py` remove the now-duplicated old `JINA_*` constants in favor of the `SCRAPE_*` added in T-1.2 (or rename in place if T-1.2 kept both); ensure `JINA_BASE_URL` is gone and all references use `SCRAPE_*`. Update `scraper.py` + any test references.
   - **Test**: `cd minion && grep -rn "JINA_" src tests` returns nothing; `uv run pyright && uv run pytest -q`.
 
-- [ ] **T-2.3**: Rename step class `JinaStep` → `ScrapeStep`; retain `StepName.jina` wire value
+- [x] **T-2.3**: Rename step class `JinaStep` → `ScrapeStep`; retain `StepName.jina` wire value
   - **Do**: In `minion/src/minion/steps/ingestion.py` rename the class `JinaStep` → `ScrapeStep`; update `steps/__init__.py`, `build_pipeline`, and tests (`test_jina_step.py` → `test_scrape_step.py`). **Do NOT change the `StepName.jina` enum value** (shared-schema/PWA wire contract) — add a one-line comment that `jina` is the scrape step's stable wire name. Update the constitution module-shape example `jina.py` → `scraper.py`.
   - **Test**: `cd minion && grep -rn "JinaStep\|JinaReader" src tests` returns nothing; `grep -rn "StepName.jina\|\"jina\"" src` still present (wire value kept); `uv run pytest -q`.
 
 ## Phase 3: Verify + burn-in handoff
 
-- [ ] **T-3.1**: Full minion regression gates
+- [x] **T-3.1**: Full minion regression gates
   - **Do**: Run the complete suite; fix any fallout. Confirm `test_validate_input` + `test_ingestion_pipeline` pass unchanged (taxonomy + ≥50%/≥5 gate semantics preserved, AC-7).
   - **Test**: `cd minion && uv run ruff check . && uv run ruff format --check . && uv run pyright && uv run pytest` all green.
 
