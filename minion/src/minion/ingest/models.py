@@ -70,3 +70,13 @@ class SourceSet(BaseModel):
     @property
     def ok_count(self) -> int:
         return len(self.ok_sources)
+
+    @property
+    def paywalled_count(self) -> int:
+        return sum(1 for s in self.sources if s.outcome is SourceOutcome.paywalled)
+
+    @property
+    def failed_count(self) -> int:
+        """Sources that errored out (non-retryable 4xx, or 429/5xx/transport after retries).
+        Distinct from paywalled — used to tell a thin-news day apart from scrape trouble."""
+        return sum(1 for s in self.sources if s.outcome is SourceOutcome.failed)

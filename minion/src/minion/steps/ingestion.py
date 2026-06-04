@@ -90,7 +90,15 @@ class JinaStep:
     def run(self, ctx: StepContext) -> StepResult:
         urls = cast("list[str]", ctx.data.get("candidate_urls", []))
         sources = SourceSet(sources=self.client.scrape(urls))
-        ctx.log.info("jina scraped", extra={"ok": sources.ok_count, "total": sources.total})
+        ctx.log.info(
+            "jina scraped",
+            extra={
+                "ok": sources.ok_count,
+                "paywalled": sources.paywalled_count,
+                "failed": sources.failed_count,
+                "total": sources.total,
+            },
+        )
         return StepResult(payload={"sources": sources})
 
 
@@ -111,10 +119,21 @@ class ValidateInputStep:
         ok, total = sources.ok_count, sources.total
         fraction = ok / total
         if ok < config.MIN_SOURCES_OK or fraction < config.MIN_SOURCES_FRACTION:
+            # Include the paywalled/failed split so a thin-news day (mostly paywalled) is
+            # distinguishable from scrape trouble (mostly failed — e.g. Jina rate-limiting).
             raise InsufficientSourcesError(
                 f"insufficient_sources: {ok}/{total} ok "
-                f"(need ≥{config.MIN_SOURCES_OK} and ≥{config.MIN_SOURCES_FRACTION:.0%})"
+                f"({sources.paywalled_count} paywalled, {sources.failed_count} failed; "
+                f"need ≥{config.MIN_SOURCES_OK} and ≥{config.MIN_SOURCES_FRACTION:.0%})"
             )
 
-        ctx.log.info("input validated", extra={"ok": ok, "total": total})
+        ctx.log.info(
+            "input validated",
+            extra={
+                "ok": ok,
+                "paywalled": sources.paywalled_count,
+                "failed": sources.failed_count,
+                "total": total,
+            },
+        )
         return StepResult()
