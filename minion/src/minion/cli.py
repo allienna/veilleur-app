@@ -68,16 +68,32 @@ def build_stores(
     )
 
 
-def build_notifier(client: firestore.Client) -> Notifier:
+def build_notifier(client: firestore.Client) -> Notifier | None:
     """Construct the production Web Push notifier (F-012): a Firestore subscription store over
-    `client` plus the VAPID private key from Secret Manager."""
+    `client` plus the VAPID private key from Secret Manager.
+
+    Returns ``None`` when the VAPID secret has no accessible version. Push is soft-fail
+    (F-012 — "push failure never fails a run"); a missing notification credential must likewise
+    never sink the daily pipeline, so we log a warning and let the orchestrator skip the
+    run-completion push rather than crashing the whole run at startup."""
+    import logging
+
     from minion import secrets
     from minion.config import VAPID_PRIVATE_KEY_SECRET
+    from minion.logging import LOGGER_NAME
     from minion.notify import WebPushNotifier
     from minion.store.firestore import FirestoreSubscriptionStore
 
+    try:
+        vapid_private_key = secrets.require(VAPID_PRIVATE_KEY_SECRET)
+    except secrets.MissingSecretError:
+        logging.getLogger(LOGGER_NAME).warning(
+            "VAPID secret %r has no version; run-completion push disabled for this run",
+            VAPID_PRIVATE_KEY_SECRET,
+        )
+        return None
     subscriptions = FirestoreSubscriptionStore(client)
-    return WebPushNotifier(subscriptions, secrets.require(VAPID_PRIVATE_KEY_SECRET))
+    return WebPushNotifier(subscriptions, vapid_private_key)
 
 
 def build_clients() -> tuple[

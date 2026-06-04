@@ -39,6 +39,27 @@ def test_non_padded_date_rejected() -> None:
     assert result.exit_code != 0
 
 
+def test_build_notifier_returns_none_when_vapid_secret_missing(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    # Push is soft-fail (F-012): an empty/absent VAPID secret must not crash the pipeline at
+    # startup — build_notifier degrades to None and the orchestrator simply skips the push.
+    from minion import secrets
+
+    def raise_missing(name: str) -> str:
+        raise secrets.MissingSecretError(name)
+
+    monkeypatch.setattr(secrets, "require", raise_missing)
+    assert cli_mod.build_notifier(object()) is None
+
+
+def test_build_notifier_returns_notifier_when_vapid_secret_present(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    from minion import secrets
+    from minion.notify import WebPushNotifier
+
+    monkeypatch.setattr(secrets, "require", lambda name: "fake-vapid-key")
+    notifier = cli_mod.build_notifier(object())
+    assert isinstance(notifier, WebPushNotifier)
+
+
 def test_wired_run_exits_zero(monkeypatch) -> None:  # type: ignore[no-untyped-def]
     def fake_client() -> object:
         return object()  # the in-memory stores ignore it; no real Firestore needed
