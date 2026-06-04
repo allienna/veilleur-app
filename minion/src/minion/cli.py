@@ -102,13 +102,13 @@ def build_clients() -> tuple[
     """Construct the production ingestion / generation / publishing clients (lazy — needs creds)."""
     from minion.generate.runner import ClaudeGenerateRunner
     from minion.ingest.gmail import GmailReaderClient
-    from minion.ingest.jina import JinaReaderClient
+    from minion.ingest.scraper import LocalExtractorClient
     from minion.publish.github import GitHubContentRepository
     from minion.publish.imagen import ClaudePromptRewriter, VertexImageGenerator
 
     return (
         GmailReaderClient(),
-        JinaReaderClient(),
+        LocalExtractorClient(),
         ClaudeGenerateRunner(),
         VertexImageGenerator(),
         ClaudePromptRewriter(),

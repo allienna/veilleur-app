@@ -8,23 +8,23 @@
 
 ## Phase 1: Local extraction engine (the fix)
 
-- [ ] **T-1.1**: Add `trafilatura` dependency
+- [x] **T-1.1**: Add `trafilatura` dependency
   - **Do**: Add `trafilatura` to `minion/pyproject.toml` `[project].dependencies`; run `uv lock`. Note the dep + rationale (Jina rate-limit, see PRD §5 amendment) for the eventual PR description.
   - **Test**: `cd minion && uv sync && uv run python -c "import trafilatura; print(trafilatura.__version__)"`.
 
-- [ ] **T-1.2**: Add scrape config constants + recalibrate paywall markers
+- [x] **T-1.2**: Add scrape config constants + recalibrate paywall markers
   - **Do**: In `minion/src/minion/config.py` add `SCRAPE_USER_AGENT` (realistic browser UA). Add `SCRAPE_TIMEOUT/MAX_RETRIES/BACKOFF_BASE/WORKERS/DEADLINE` (values copied from the `JINA_*` originals; the old `JINA_*` are removed in Phase 2). Recalibrate `PAYWALL_MARKERS` for raw publisher HTML (not Jina output) with a provenance comment. Leave `MIN_SOURCES_OK/MIN_SOURCES_FRACTION/MAX_URLS` unchanged.
   - **Test**: `cd minion && uv run ruff check src/minion/config.py && uv run pyright src/minion/config.py`.
 
-- [ ] **T-1.3**: Implement `LocalExtractorClient` in `scraper.py`
+- [x] **T-1.3**: Implement `LocalExtractorClient` in `scraper.py`
   - **Do**: New `minion/src/minion/ingest/scraper.py`. Port jina.py's `ThreadPoolExecutor` + retry/backoff + deadline + `scrape()` structure verbatim. Per URL: `httpx` GET the **origin URL** (client built with `follow_redirects=True`, `headers={"User-Agent": SCRAPE_USER_AGENT}`, `timeout=SCRAPE_TIMEOUT`); retry on `TransportError` + `{429,500,502,503,504}`; non-2xx → `failed`. On 2xx: paywall-marker check on raw HTML → `paywalled`; else `body=extract(html, output_format="markdown", favor_precision=True)`, `title=metadata(html).title`; empty/None `body` → `failed`, else `ScrapedSource(ok, title, markdown=body)`. Keep `client`/`sleep` injectable. Implements the existing scrape Protocol structurally (no rename yet). Never raises for one bad source.
   - **Test**: `cd minion && uv run ruff check src/minion/ingest/scraper.py && uv run pyright src/minion/ingest/scraper.py`.
 
-- [ ] **T-1.4**: Tests for `LocalExtractorClient`
+- [x] **T-1.4**: Tests for `LocalExtractorClient`
   - **Do**: New `minion/tests/test_scraper_client.py` using `httpx.MockTransport` + no-op sleep, with canned HTML fixtures (inline or `tests/fixtures/`). Cases: article HTML → `ok` (non-empty markdown + title); paywall-marker HTML → `paywalled`; empty/JS-shell HTML (trafilatura None) → `failed`; 403/404 → `failed`; 429/5xx → retried then `failed`; `TransportError` → retried then `failed`; deadline → unfinished `failed`; empty URL list → `[]`; order preserved.
   - **Test**: `cd minion && uv run pytest tests/test_scraper_client.py -q`.
 
-- [ ] **T-1.5**: Wire the new client; delete `jina.py`
+- [x] **T-1.5**: Wire the new client; delete `jina.py`
   - **Do**: In `minion/src/minion/cli.py` `build_clients`, construct `LocalExtractorClient` where `JinaReaderClient()` was. Delete `minion/src/minion/ingest/jina.py` and `minion/tests/test_jina_client.py` (superseded by T-1.3/T-1.4). Update `minion/src/minion/ingest/__init__.py` export.
   - **Test**: `cd minion && uv run pytest -q` (whole suite green; no stale jina import).
 
