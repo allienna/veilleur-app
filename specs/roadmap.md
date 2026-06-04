@@ -180,10 +180,12 @@ F-001 spike
         │                                   └─▶ F-012 push notifications ◀─ F-007
         │                                         └─▶ F-013 hardening + burn-in
         │                                               └─▶ F-014 live-demo stub
+        ├─▶ F-015 local extraction (supersedes F-004 scraper) ──┐
+        │     (surfaced by F-013 burn-in; blocks burn-in resume)─┘──▶ F-013 burn-in resumes
         └─ (F-009 also reads from F-006's article output)
 ```
 
-Critical path (longest dependency chain): **F-001 → F-002 → F-003 → F-004 → F-005 → F-006 → F-007 → F-008 → F-011 → F-012 → F-013 → F-014** (12 steps).
+Critical path (longest dependency chain): **F-001 → F-002 → F-003 → F-004 → F-005 → F-006 → F-007 → F-008 → F-011 → F-012 → F-013 → F-014** (12 steps). **F-015** is an out-of-band remediation (depends F-004, surfaced by F-013 burn-in): it is not on the original critical path but **gates F-013's burn-in resumption** — burn-in cannot accumulate clean runs until F-015 lands.
 
 Parallelization opportunity: once F-006 lands, F-007 (deploy) and F-009 (PWA reading) can run in parallel — the Minion + PWA tracks split here.
 
@@ -219,6 +221,8 @@ Today is **2026-05-19**. M7 production target is **2026-05-20** (T-1). The PRD �
 | M11 Talk | 2026-06-11 | 2026-06-11 | Unchanged |
 
 Burn-in window shrinks from 21 to ~13 days. The PRD acceptance "≥18/21 OK on rolling window" (R5) becomes "≥10/13" — equivalent quality bar, less statistical confidence. Acceptable trade if F-005 (the on-stage thesis) and F-013 (defensible repo) both land cleanly.
+
+**Update 2026-06-04 — burn-in window compressed again by F-015.** Burn-in started 2026-06-04 but the first runs hard-failed on the scraper (Jina rate-limiting), forcing the F-015 remediation *before* any clean run can land. Realistic earliest clean run ≈ 2026-06-05–06 (after F-015 ships + image redeploy). With the talk on 2026-06-11, that leaves **~5–6 days** of burn-in — the **≥7-consecutive bar is likely unreachable**. Decision needed (carry into F-013): (a) relax the consecutive bar (e.g. ≥5 consecutive + manual top-up runs to pad the window), (b) accept fewer consecutive successes and lean on the backup demo video (R5) + already-published articles for the talk, or (c) both. The ≥10/13 *window* bar may still be met via manual top-up runs once F-015 lands.
 
 **Decision the roadmap is not the right place to make**: whether to (a) accept the slip, (b) cut scope — strongest candidate is F-010 (LinkedIn share can ship post-talk; manual copy/paste during demo is acceptable), or (c) ship Minion without PWA for the talk and treat the PWA as a v1.1.
 

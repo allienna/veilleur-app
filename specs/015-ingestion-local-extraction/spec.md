@@ -60,7 +60,7 @@ Reference PRD §6 failure-mode policies (as amended 2026-06-04):
 - [ ] AC-3: Paywall markers recalibrated for raw-HTML extraction; a paywalled fixture → `paywalled`, a normal article → `ok`. Markers' provenance documented.
 - [ ] AC-4: Port renamed `JinaClient`→`ScraperClient`, `jina.py`→`scraper.py`, `JINA_*`→`SCRAPE_*`; all references (steps/fakes/cli/tests) updated; no `Jina` left in live code (historical doc mentions allowed).
 - [ ] AC-5: `trafilatura` added to `pyproject.toml` + `uv.lock`; `cli.build_clients` wires the new client; `ruff` + `ruff format` + `pyright` + `pytest` green; `build-minion` CI green.
-- [ ] AC-6: A real production smoke run clears the ≥50%/≥5 gate (i.e. the gate no longer fails on rate-limiting) — recorded in the F-013 burn-in log as the first clean post-F-015 run.
+- [ ] AC-6: A real production smoke run clears the ≥50%/≥5 gate (i.e. the gate no longer fails on rate-limiting) — recorded in the F-013 burn-in log as the first clean post-F-015 run. **Verified in burn-in *after* merge** (needs a live run + real news day) — like F-013's device ACs, this does **not** gate the F-015 PR merge/`/review`/`/ship`; the unit/integration ACs (AC-1…AC-5, AC-7) do.
 - [ ] AC-7: The ingestion state machine, Gmail step, `ScrapedSource` taxonomy, and the ≥50%/≥5 gate semantics are unchanged (no behavior regression in `test_validate_input` / `test_ingestion_pipeline`).
 
 ## Out of Scope
