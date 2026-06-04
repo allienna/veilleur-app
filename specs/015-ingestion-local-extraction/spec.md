@@ -2,7 +2,7 @@
 
 **Track ID**: 015-ingestion-local-extraction
 **Roadmap ref**: F-015
-**Status**: Approved
+**Status**: In Progress
 **Created**: 2026-06-04
 **Branch**: feat/015-ingestion-local-extraction
 **PRD sections**: §5 Tech Choices (2026-06-04 scraping amendment), §6 scrape-failure policy, FR-A2 step 2, FR-A3 (paywall/copyright)
