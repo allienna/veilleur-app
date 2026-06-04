@@ -11,7 +11,7 @@ Veilleur-app is a mono-tenant, mono-user automated tech-watch pipeline: a Stripe
 1. **Single allowed identity.** Only the hardcoded operator email may read or write Firestore documents, call `trigger-api`, or perform any privileged action. The PWA shell is a public static SPA — what is gated is the **data and the actions**, not the bundle download. Defense-in-depth: Firestore Security Rules + trigger-api JWT verification (`email_verified == true`). The PWA client check is UX only, never the security boundary.
 2. **OAuth-by-default Anthropic auth.** `ANTHROPIC_API_KEY` is **absent from env by default**. The container authenticates via `CLAUDE_CODE_OAUTH_TOKEN`. The API-key fallback exists in Secret Manager but is mounted only by explicit, manually-edited deployment, never automated.
 3. **No secrets in source.** All credentials live in GCP Secret Manager and are accessed via SA IAM. Never commit secrets, `.env` files with real values, or service-account JSON keys.
-4. **Transformative use only.** No source paragraph is reproduced wholesale. Direct quotes ≤30 words per source, max 1 per source. Every cited fact attributes its source by name and links to its URL. Paywall content (Jina markers) is excluded. Enforced by deterministic post-validator in `/generate`.
+4. **Transformative use only.** No source paragraph is reproduced wholesale. Direct quotes ≤30 words per source, max 1 per source. Every cited fact attributes its source by name and links to its URL. Paywall content (scraper output markers) is excluded. Enforced by deterministic post-validator in `/generate`.
 5. **Hard caps per run.** 50 newsletters fetched, 100 links scraped, 500k input tokens, 30k output tokens, 1 image generated, 10k-word article max, 3000-char LinkedIn post. Exceeding any cap = run failure, not silent truncation.
 6. **20-minute hard run timeout.** No Cloud Run Job invocation runs longer.
 7. **Idempotent runs.** Replaying a run for date `D` overwrites prior outputs cleanly — never duplicates an article, image, or Firestore document.
@@ -35,7 +35,7 @@ Veilleur-app is a mono-tenant, mono-user automated tech-watch pipeline: a Stripe
 | Auth | Firebase Auth (Google sign-in) | **Locked** |
 | State | Firestore (Native mode) + real-time listeners | **Locked** |
 | Push | Web Push (VAPID) + service worker | **Locked** |
-| Scraping | Jina Reader | Flexible |
+| Scraping | Local extraction (`httpx` + `trafilatura`) — was Jina Reader, swapped in F-015 | Flexible |
 | `trigger-api` runtime | Cloud Run service vs Cloud Function 2nd gen | Flexible |
 | IaC | Terraform preferred, gcloud scripts acceptable | Flexible |
 | `shared/` types | JSON Schema → codegen vs hand-sync TS/Python | Flexible |

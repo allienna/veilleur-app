@@ -42,7 +42,7 @@ Decomposes the PRD into vertically-sliced features ordered by dependency. Each f
 **Delivers**: First half of the daily run reaches "context assembly" with real upstream data; unit tests with mocked APIs cover happy path + degraded thresholds.
 **Surfaces**: `minion`
 **Estimated size**: M
-**Status**: Complete (merged)
+**Status**: Complete (merged) — *scraper superseded: the Jina Reader engine is replaced by local extraction in **F-015** after F-013 burn-in proved Jina's free tier rate-limits below the pipeline's needs. The ingestion state machine, Gmail step, and ≥50%/≥5 gate are unchanged.*
 
 ### F-005: Agentic step `/generate` (the talk artefact)
 **Summary**: `claude -p /generate` integration over the versioned `.claude/commands/generate.md` slash command (installed via the `allienna/claude-feature-flow` plugin per constitution §3). Output validation enforces Astro frontmatter, LinkedIn ≤3000 chars, image prompt ≤1000 chars, theme allowlist. Deterministic copyright post-validator (≤30-word quotes, max 1/source, n-gram overlap). Agentic retry on validation failure (max 2).
@@ -133,6 +133,15 @@ Decomposes the PRD into vertically-sliced features ordered by dependency. Each f
 **Surfaces**: TBD on stage
 **Estimated size**: S (the stub) — actual demo work is live and out of the roadmap
 
+### F-015: Ingestion resilience — local content extraction
+**Summary**: Replace the Jina Reader scraper with in-container local extraction (`httpx` fetch + `trafilatura`), implementing the existing scraper port. No external rate limit / key / quota. Recalibrate paywall-detection markers for raw-HTML extraction; keep the `ok/paywalled/failed` outcome taxonomy and the ≥50%/≥5 validation gate (now guarding mass fetch failure rather than central throttling). Rename the `JinaClient` port → `ScraperClient` and `jina.py` → the new extractor module for coherence. Port stays open for a documented hosted-reader fallback if local yield proves too low.
+**PRD sections**: §5 Tech Choices (2026-06-04 scraping amendment), §6 scrape-failure policy, FR-A2 step 2
+**Depends on**: F-004 (supersedes its scraper), surfaced by F-013 burn-in
+**Delivers**: Daily runs clear the ingestion gate without an external rate limit; burn-in (F-013) can resume. Unblocks the talk's "production runs daily" claim.
+**Surfaces**: `minion`
+**Estimated size**: M
+**Status**: Planning
+
 ## Feature Table
 
 | # | Feature | Depends on | Size | Surface |
@@ -151,6 +160,7 @@ Decomposes the PRD into vertically-sliced features ordered by dependency. Each f
 | F-012 | Push notifications | F-011, F-007 | M | pwa + minion |
 | F-013 | Hardening + burn-in + demo prep | F-012 | M | repo-wide |
 | F-014 | Live-demo reserved track stub | F-013 | S | TBD |
+| F-015 | Ingestion resilience — local content extraction | F-004 (surfaced by F-013) | M | minion |
 
 ## Dependency Graph
 
