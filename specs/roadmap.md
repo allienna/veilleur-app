@@ -140,7 +140,7 @@ Decomposes the PRD into vertically-sliced features ordered by dependency. Each f
 **Delivers**: Daily runs clear the ingestion gate without an external rate limit; burn-in (F-013) can resume. Unblocks the talk's "production runs daily" claim.
 **Surfaces**: `minion`
 **Estimated size**: M
-**Status**: Planning
+**Status**: Specifying
 
 ## Feature Table
 
