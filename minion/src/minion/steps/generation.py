@@ -108,7 +108,17 @@ class GenerateStep:
             except (json.JSONDecodeError, PydanticValidationError) as exc:
                 last_errors = [ValidationError(code="unparseable_output", message=str(exc)[:200])]
                 feedback = [e.message for e in last_errors]
-                ctx.log.warning("generate output unparseable", extra={"attempt": attempt})
+                ctx.log.warning(
+                    "generate output unparseable",
+                    extra={
+                        "attempt": attempt,
+                        # Log the head of claude's raw artefact text so the malformed shape
+                        # (markdown fences, prose preamble, truncation at the output-token cap) is
+                        # diagnosable from logs rather than reproduced by hand (F-013 burn-in).
+                        "rawHead": invocation.text[:1500],
+                        "rawLen": len(invocation.text),
+                    },
+                )
                 continue
 
             if article.theme not in config.THEME_ALLOWLIST:
