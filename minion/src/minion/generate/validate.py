@@ -124,9 +124,21 @@ def validate_copyright(
     body = article.body
 
     # 1. Direct-quote length and per-source count.
+    #
+    # A quote counts toward a source's per-source limit only when it appears verbatim in
+    # *exactly one* source. With many topically-overlapping sources, a short normalized quote is
+    # a substring of several sources' markdown; attributing it to every container inflates counts
+    # and trips `too_many_quotes` on phrasing the article never over-quoted (the model then can't
+    # satisfy the retry). A span shared by ≥2 sources is common reporting, not single-source
+    # over-quoting, so it pins to none. Identical spans are de-duplicated (constitution §4 / FR-5).
     per_source_quotes: dict[str, int] = {s.url: 0 for s in sources}
     normalized_sources = {s.url: " ".join(_normalize_tokens(s.markdown)) for s in sources}
+    seen_quotes: set[str] = set()
     for quote in _find_quotes(body):
+        normalized_quote = " ".join(_normalize_tokens(quote))
+        if not normalized_quote or normalized_quote in seen_quotes:
+            continue
+        seen_quotes.add(normalized_quote)
         if len(quote.split()) > config.MAX_QUOTE_WORDS:
             errors.append(
                 ValidationError(
@@ -134,10 +146,9 @@ def validate_copyright(
                     message=f"direct quote exceeds {config.MAX_QUOTE_WORDS} words",
                 )
             )
-        normalized_quote = " ".join(_normalize_tokens(quote))
-        for source in sources:
-            if normalized_quote and normalized_quote in normalized_sources[source.url]:
-                per_source_quotes[source.url] += 1
+        containing = [url for url, text in normalized_sources.items() if normalized_quote in text]
+        if len(containing) == 1:
+            per_source_quotes[containing[0]] += 1
     for source in sources:
         if per_source_quotes[source.url] > config.MAX_QUOTES_PER_SOURCE:
             errors.append(

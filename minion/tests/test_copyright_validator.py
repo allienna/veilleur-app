@@ -54,6 +54,29 @@ def test_more_than_one_quote_per_source_flagged() -> None:
     assert "too_many_quotes" in _codes(body)
 
 
+def test_quote_shared_by_multiple_sources_not_counted() -> None:
+    # A phrase present verbatim in ≥2 sources is common reporting, not single-source
+    # over-quoting — it must pin to no source and not trip too_many_quotes (the 47-source
+    # burn-in false positive). Two distinct shared quotes here would each be miscounted under
+    # the old "increment every containing source" logic.
+    shared = "Kubernetes introduced sidecar containers as a first class feature"
+    other = ContextSource(
+        url="https://example.com/dup", title="Dup", markdown=f"Reporting: {shared} this year."
+    )
+    body = f"It noted «{shared}» and «{shared}» again."
+    codes = {e.code for e in validate_copyright(_article(body), [SOURCE, other])}
+    assert "too_many_quotes" not in codes
+
+
+def test_identical_quote_spans_deduped() -> None:
+    # The same span repeated counts once: two copies of one unique-source quote stay within the
+    # ≤1 limit instead of summing to 2.
+    unique = "changes how init containers are scheduled"
+    body = f"As noted, «{unique}». Later again: «{unique}»."
+    codes = {e.code for e in validate_copyright(_article(body), [SOURCE])}
+    assert "too_many_quotes" not in codes
+
+
 def test_wholesale_reproduction_flagged() -> None:
     # Copies a long verbatim run from the source, unquoted.
     assert "wholesale_reproduction" in _codes(SOURCE_BODY)
