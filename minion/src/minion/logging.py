@@ -33,6 +33,11 @@ class _StdoutJsonHandler(logging.Handler):
     def emit(self, record: logging.LogRecord) -> None:
         try:
             sys.stdout.write(self.format(record) + "\n")
+            # Flush every record: stdout is block-buffered when it isn't a TTY (Cloud Run pipes
+            # it), so without this an uncatchable SIGKILL — e.g. the Cloud Run task timeout —
+            # discards the buffered records and the run leaves no trace. A one-shot job emits few
+            # lines, so per-record flush costs nothing (F-013 burn-in observability).
+            sys.stdout.flush()
         except Exception:  # pragma: no cover - defensive, mirrors logging.StreamHandler
             self.handleError(record)
 
