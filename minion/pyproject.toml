@@ -25,6 +25,9 @@ dependencies = [
     "pywebpush>=2.0",
     "python-json-logger>=2.0",
     "python-ulid>=2.0",
+    # Local article extraction (F-015): in-container HTML→Markdown main-content extraction,
+    # replacing the rate-limited Jina Reader free tier (PRD §5 amendment).
+    "trafilatura>=2.0",
     "veilleur-shared",
 ]
 

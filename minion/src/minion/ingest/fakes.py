@@ -1,6 +1,6 @@
 """Hermetic test doubles for the ingestion ports (F-004 AD-1).
 
-Mirrors `store/memory.py`: in-memory fakes that satisfy the `GmailClient` / `JinaClient`
+Mirrors `store/memory.py`: in-memory fakes that satisfy the `GmailClient` / `ScraperClient`
 Protocols so steps and the full pipeline can be exercised without network access.
 """
 
@@ -39,7 +39,7 @@ def _default_source(url: str) -> ScrapedSource:
 
 
 @dataclass
-class FakeJinaClient:
+class FakeScraperClient:
     """Returns canned scrape results.
 
     `results` maps a URL to its `ScrapedSource`; any URL not present gets a default `ok`

@@ -37,7 +37,7 @@ The current v1 of Veilleur depends on a local n8n containerised via Colima and a
 
 ### A. Minion Pipeline
 - As the operator, I want the pipeline to ingest unread newsletters from the dedicated Gmail inbox over the last 24h so that no manual mailbox triage is needed.
-- As the operator, I want each linked article scraped via Jina Reader so that source extraction is deterministic and paywall-aware.
+- As the operator, I want each linked article scraped to clean Markdown by an in-container extractor so that source extraction is deterministic, paywall-aware, and free of an external rate limit (F-015; was Jina Reader — see §5 amendment).
 - As the operator, I want Claude to detect the day's dominant theme, draft a transformative synthesis article, write the image prompt, and write the LinkedIn catch-up post in a single agentic call so that all generative steps share one context.
 - As the operator, I want an Imagen 4 Fast illustration of *Le Veilleur* (navy owl, amber eyes, Pixar style, 16:9) staged in the day's theme so that every published article has a coherent visual identity.
 - As the operator, I want the article and image committed to the public Astro repo automatically so that publication requires zero human action.
@@ -75,7 +75,7 @@ Cloud Scheduler fires a single cron job daily at 06:00 Europe/Paris (TBD in `/pl
 - [ ] Concurrent runs are prevented by a Firestore lock (`aborted: already_running`).
 
 #### FR-A2: Hybrid orchestration (deterministic + agentic)
-A Python orchestrator runs nine steps: Gmail pull → Jina scrape → schema validation → context assembly → `claude -p /generate` → output validation → Imagen 4 Fast → GitHub commit → Firestore + web push. Each step writes its state to Firestore for live supervision.
+A Python orchestrator runs nine steps: Gmail pull → scrape (local extraction) → schema validation → context assembly → `claude -p /generate` → output validation → Imagen 4 Fast → GitHub commit → Firestore + web push. Each step writes its state to Firestore for live supervision.
 **Acceptance criteria:**
 - [ ] Each step writes `runs/{runId}/steps/{stepName}` with `status`, `started_at`, `ended_at`, `error?`.
 - [ ] The agentic step invokes `claude -p` with `--permission-mode bypassPermissions`; `ANTHROPIC_API_KEY` is **absent from env by default** (OAuth-only via `CLAUDE_CODE_OAUTH_TOKEN`). The API-key fallback (§8 `anthropic-api-key-fallback`) is an explicit, manually activated mode, never the default path.
@@ -88,7 +88,7 @@ The `/generate` slash-command spec (`minion/.claude/commands/generate.md`) encod
 - [ ] Direct quotes ≤30 words per source, max 1 quote per source.
 - [ ] Each idea/figure attributes its source by name and links to source URL.
 - [ ] No paragraph reproduces a source paragraph wholesale (n-gram overlap check).
-- [ ] Paywall content (detected via Jina Reader output markers) is excluded.
+- [ ] Paywall content (detected via scraper output markers — recalibrated for the local extractor in F-015) is excluded.
 
 #### FR-A4: Auto-publish to Astro repo
 The Minion commits `site/src/content/posts/YYYY-MM-DD-<slug>.md` and `site/public/images/posts/YYYY-MM-DD.webp` to the existing `allienna.github.io` repo via the GitHub Contents API (fine-grained PAT scoped to that repo, `contents:write` only).
@@ -161,7 +161,7 @@ A non-started feature track is reserved by 2026-06-05, with `specs/feature-XXX/`
 | Dimension | Target | Hard ceiling |
 |---|---|---|
 | Total run duration (Cloud Run Job, excl. GH Pages deploy) | ≤8 min | 20 min (Job timeout) |
-| Gmail + Jina ingestion stage | ≤3 min | 5 min |
+| Gmail + scrape ingestion stage | ≤3 min | 5 min |
 | Claude `/generate` agentic call | ≤4 min | 8 min |
 | Imagen 4 Fast image generation | ≤30s | 90s |
 | GitHub commit | ≤10s | 60s |
@@ -179,7 +179,7 @@ A non-started feature track is reserved by 2026-06-05, with `specs/feature-XXX/`
 ### Scalability
 Hard caps per run (cost + quality guardrails):
 - Newsletters fetched: 50.
-- Links scraped via Jina: 100.
+- Links scraped: 100.
 - `/generate` input tokens: 500k.
 - `/generate` output tokens: 30k.
 - Images generated: 1.
@@ -202,7 +202,7 @@ No horizontal scale required — single-user, single-run-per-day product. Monthl
 │     PWA      │ ──┐                        │  + Node + git        │
 │ (Firebase    │   │  POST /trigger          │                      │
 │   Hosting)   │ ──┼─▶┌────────────────┐    │  9 steps:            │
-│              │   │  │  trigger-api   │ ──▶│  Gmail → Jina →      │
+│              │   │  │  trigger-api   │ ──▶│  Gmail → scrape →    │
 │              │ ◀─┘  │  Cloud Run svc │    │  /generate → Imagen  │
 └──────────────┘ Firestore listeners  └──┘  │  → GitHub → Firestore│
        │                                    │  → web push          │
@@ -237,14 +237,16 @@ Budget kill-switch: Cloud Billing → Pub/Sub → Cloud Function → disable Sch
 | State store | Firestore (Native mode) | Real-time listeners drive live supervision; same project as Auth. |
 | trigger-api | Cloud Run service (~50 LOC, Node or Python — TBD `/plan`) | Verifies JWT, invokes Cloud Run Job with payload, returns `runId`. |
 | Push | Web Push API (VAPID) + service worker | Native iOS 16.4+ support when PWA is home-screen installed. |
-| Scraping | Jina Reader (free tier, no key) | Sufficient at <100 req/day. |
+| Scraping | **Local extraction** — `httpx` fetch + `trafilatura` (in-container; no external service) | Jina free tier was found to rate-limit below the pipeline's needs (see amendment ↓). Local extraction has no quota/key/throttle. |
 | Repo layout | Monorepo `veilleur-app` (this repo) — see §8 below | Single source of truth for Minion + PWA + specs; Astro site stays in `allienna.github.io`. |
+
+> **Amendment 2026-06-04 (scraping engine).** The original choice — Jina Reader free tier (no key) — was falsified during F-013 burn-in: the first production runs hard-failed the ≥50%/≥5 ingestion gate at **17/46** then **1/31** sources OK, with **0 paywalled and all failures HTTP-level** — the free-tier rate-limit signature, not a thin-news day. A single run of up to 100 URLs across a bounded worker pool bursts past the free per-minute limit. Scraping is rated **Flexible** in `specs/constitution.md`, so the engine is swappable without violating a principle. Decision: replace Jina with in-container `httpx` + `trafilatura` extraction (no external rate limit). Tracked in **F-015** (Ingestion resilience); the port abstraction keeps a hosted-reader fallback open if local yield proves too low.
 
 ### Integrations
 | System | Purpose | Interface |
 |--------|---------|-----------|
 | Gmail API | Fetch unread newsletters | OAuth refresh token (Secret Manager), `google-api-python-client` |
-| Jina Reader | Scrape source URLs to clean Markdown | HTTPS GET `https://r.jina.ai/<url>` |
+| Local extractor (F-015) | Scrape source URLs to clean Markdown | `httpx` GET (browser-like UA, redirects) → `trafilatura` extraction, in-process |
 | Anthropic Claude | Article + image prompt + LinkedIn post generation | `claude -p` CLI subprocess |
 | Vertex AI (Imagen) | Image generation | `google-genai` SDK in `vertexai=True` mode |
 | GitHub | Commit article + image to `allienna.github.io` | GitHub Contents API, fine-grained PAT |
@@ -265,7 +267,7 @@ Every step writes `status`, `started_at`, `ended_at`, `error?` to `runs/{runId}/
 |---|---|
 | Gmail auth expired | Hard fail. PWA banner with re-auth runbook link. Push notif sent. |
 | Mailbox empty (no newsletter in 24h) | `skipped: no_sources`. No article. **No push notif** (avoids weekend noise). Visible in history. |
-| Jina rate-limit / source down | Continue if **≥50% sources scraped AND ≥5 sources OK**. Otherwise hard fail. |
+| Scrape failures / sources down | Continue if **≥50% sources scraped AND ≥5 sources OK**. Otherwise hard fail. (Local extraction has no central rate limit; this gate now guards mass fetch failure — bot-blocking, JS-only pages, timeouts.) |
 | Claude error (timeout / 5xx / rate limit) | 2 retries with exponential backoff. Then hard fail. |
 | Claude output validation fails | Agentic retry (max 2): re-invoke `claude -p /generate` with validation error fed back as input. Then hard fail. |
 | Imagen quota / moderation rejection | Agentic retry (1): Claude rewrites prompt softer. Then publish article with **placeholder Le Veilleur generic image**. Run = `success_with_warnings`. |

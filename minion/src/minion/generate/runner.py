@@ -1,6 +1,6 @@
 # pyright: basic
 # ^ subprocess boundary to the external `claude` CLI + the plugin's `/generate` command; like
-#   store/firestore.py and the gmail/jina clients it is dropped to basic checking. Behaviour is
+#   store/firestore.py and the gmail/scrape clients it is dropped to basic checking. Behaviour is
 #   covered by test_generate_runner.py (subprocess mocked) and the gated integration test.
 """Production runner for the agentic `/generate` call (F-005 FR-2/FR-7, AD-2/AD-4/AD-9).
 

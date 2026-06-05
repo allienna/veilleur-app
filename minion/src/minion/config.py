@@ -45,23 +45,38 @@ EXCLUDED_SENDERS: frozenset[str] = frozenset()
 MAX_NEWSLETTERS: int = 50
 MAX_URLS: int = 100
 
-# Jina Reader (PRD §5: free tier, no API key). Each candidate URL is GET-ed as
-# `JINA_BASE_URL + url`.
-JINA_BASE_URL: str = "https://r.jina.ai/"
-JINA_TIMEOUT: timedelta = timedelta(seconds=30)  # per-request HTTP timeout
-JINA_MAX_RETRIES: int = 2  # retries after the first attempt on 429 / transient errors
-JINA_BACKOFF_BASE: timedelta = timedelta(seconds=1)  # exponential backoff unit
-JINA_WORKERS: int = 6  # bounded concurrency for the scrape pool (AD-7)
-# Overall scrape budget (PRD §4: ≤3 min target, 5 min ceiling).
-JINA_DEADLINE: timedelta = timedelta(minutes=4)
-
-# Substrings in Jina Reader output that signal paywalled content (FR-A3, AD-9). The exact
-# markers are confirmed empirically and pinned by the jina-client tests.
+# Substrings in the fetched raw HTML that signal paywalled content (FR-A3). Recalibrated for
+# F-015 local extraction: the markers are matched against the origin server's raw HTML (before
+# trafilatura, which may strip the paywall notice), not Jina's cleaned output. Starter set —
+# the strongest signal is the schema.org JSON-LD `isAccessibleForFree:false` many publishers
+# embed; the rest are common visible paywall CTAs. Conservative by design (a false positive
+# wrongly drops a good source); refine against captured HTML during F-013 burn-in (AC-3).
 PAYWALL_MARKERS: tuple[str, ...] = (
+    '"isAccessibleForFree":false',
+    '"isAccessibleForFree": false',
     "This content is for subscribers only",
+    "Subscribe to continue reading",
     "Subscribe to read",
-    "metered paywall",
+    "Already a subscriber",
 )
+
+# --- Scrape / local extraction (F-015) ---------------------------------------------------
+# Each candidate URL is fetched directly from its origin (httpx, browser-like UA + redirects),
+# then main content is extracted in-process by trafilatura. No external scraping service / key /
+# rate limit (replaces Jina Reader — PRD §5 amendment).
+
+# Browser-like UA — many publishers 403 a bare/library client.
+SCRAPE_USER_AGENT: str = (
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+)
+SCRAPE_TIMEOUT: timedelta = timedelta(seconds=30)  # per-request HTTP timeout
+SCRAPE_MAX_RETRIES: int = 2  # retries after the first attempt on transient errors
+SCRAPE_BACKOFF_BASE: timedelta = timedelta(seconds=1)  # exponential backoff unit
+# Bounded fetch-pool concurrency — politeness per-origin, not central-throttle avoidance.
+SCRAPE_WORKERS: int = 6
+# Overall scrape budget (PRD §4: ≤3 min target, 5 min ceiling).
+SCRAPE_DEADLINE: timedelta = timedelta(minutes=4)
 
 # Input-validation threshold (PRD §6): continue only if ≥50% of candidates scraped OK AND
 # ≥5 sources OK; otherwise the run hard-fails.

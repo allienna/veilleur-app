@@ -18,7 +18,7 @@ import pytest
 
 from minion.config import PARIS_TZ
 from minion.generate.fakes import FakeGenerateRunner
-from minion.ingest.fakes import FakeGmailClient, FakeJinaClient
+from minion.ingest.fakes import FakeGmailClient, FakeScraperClient
 from minion.ingest.models import Newsletter
 from minion.models import RunStatus
 from minion.orchestrator import run_pipeline
@@ -58,7 +58,7 @@ def test_full_fake_pipeline_publishes_article(run_store, lock_store, clock) -> N
     )
     steps = build_pipeline(
         gmail,
-        FakeJinaClient(),
+        FakeScraperClient(),
         FakeGenerateRunner(outputs=[_artifact()]),
         image_gen,
         FakePromptRewriter(),
@@ -93,7 +93,7 @@ def test_full_fake_pipeline_imagen_fallback_yields_warnings(run_store, lock_stor
     )
     steps = build_pipeline(
         gmail,
-        FakeJinaClient(),
+        FakeScraperClient(),
         FakeGenerateRunner(outputs=[_artifact()]),
         image_gen,
         FakePromptRewriter(),

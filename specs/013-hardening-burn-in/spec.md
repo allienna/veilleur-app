@@ -61,6 +61,7 @@ Record measured values in the burn-in log or a device-verification note. If a ta
 ## Error Scenarios
 
 - **Burn-in run fails mid-window**: record root cause; if it reveals a code/config bug, fix it in-track (hardening is the point) and reset the consecutive-success counter. Do not silently drop failures from the log.
+- **Ingestion scraper insufficient (observed 2026-06-04)**: the first burn-in runs hard-failed the ≥50%/≥5 gate at 17/46 then 1/31 sources OK (0 paywalled, all HTTP-level failures — Jina free-tier rate-limiting, not a thin-news day). This is an architecture-level fix, not an in-track tweak: the scraper engine is replaced (Jina → local extraction) under its own track **F-015**, with the PRD §5 scraping decision amended accordingly. F-013 burn-in **resumes once F-015 lands**; the consecutive-success counter starts from the first clean post-F-015 run.
 - **Device AC misses target**: document measured value; decide fix-vs-accept explicitly rather than hiding the miss.
 - **OAuth token revoked during burn-in**: this is the runbook's first live test — follow FR-1, time the recovery, fold lessons back into the runbook.
 - **Imagen moderation `success_with_warnings` accumulates**: per R2, counts as success but noted; if frequent, flag the prompt template as a known issue.

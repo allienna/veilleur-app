@@ -12,12 +12,12 @@ from __future__ import annotations
 
 from minion.config import STEP_ORDER
 from minion.generate.ports import GenerateRunner
-from minion.ingest.ports import GmailClient, JinaClient
+from minion.ingest.ports import GmailClient, ScraperClient
 from minion.models import StepName
 from minion.publish.ports import ContentRepository, ImageGenerator, PromptRewriter
 from minion.steps.base import Step, StepContext, StepResult
 from minion.steps.generation import AssembleStep, GenerateStep, ValidateOutputStep
-from minion.steps.ingestion import GmailStep, JinaStep, ValidateInputStep
+from minion.steps.ingestion import GmailStep, ScrapeStep, ValidateInputStep
 from minion.steps.publish import GithubStep, ImagenStep, PublishStep
 from minion.steps.stubs import build_stub_steps
 from minion.store.ports import ArticleStore
@@ -29,7 +29,7 @@ __all__ = ["STEPS", "Step", "StepContext", "StepResult", "build_pipeline"]
 
 def build_pipeline(
     gmail_client: GmailClient,
-    jina_client: JinaClient,
+    scraper_client: ScraperClient,
     generate_runner: GenerateRunner,
     image_generator: ImageGenerator,
     prompt_rewriter: PromptRewriter,
@@ -39,7 +39,7 @@ def build_pipeline(
     """The production pipeline: every step real (web push within `publish` is F-012)."""
     real: dict[StepName, Step] = {
         StepName.gmail: GmailStep(client=gmail_client),
-        StepName.jina: JinaStep(client=jina_client),
+        StepName.jina: ScrapeStep(client=scraper_client),
         StepName.validate_input: ValidateInputStep(),
         StepName.assemble: AssembleStep(),
         StepName.generate: GenerateStep(runner=generate_runner),

@@ -1,7 +1,7 @@
 """Stub implementations of the nine pipeline steps (F-003).
 
 Each stub logs and returns canned, schema-shaped payload — no external calls. F-004+ replace
-these bodies with real Gmail/Jina/generate/Imagen/GitHub/publish logic against the same
+these bodies with real Gmail/scrape/generate/Imagen/GitHub/publish logic against the same
 `Step` contract and ordering.
 """
 

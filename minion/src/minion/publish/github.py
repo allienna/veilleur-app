@@ -6,7 +6,7 @@
 
 One PUT (create-or-update) plus a GET to fetch the existing blob SHA — idempotent by path, so a
 replay overwrites prior content (constitution §2.7). Uses `httpx` directly (the surface is tiny
-and `httpx` is already used for Jina). Retry/backoff lives in `GithubStep` (plan AD-2); this
+and `httpx` is already used for scraping). Retry/backoff lives in `GithubStep` (plan AD-2); this
 adapter raises `ContentRepoError` on any non-2xx or transport failure.
 
 Target repo is configured in `config` — currently the migration-phase `allienna/veilleur-app`
@@ -30,7 +30,7 @@ class GitHubContentRepository:
     """Commits single files to `{owner}/{repo}@{branch}` via the Contents API."""
 
     def __init__(self, client: httpx.Client | None = None) -> None:
-        # Reuse one client per run for connection pooling (mirrors JinaReaderClient); the GET+PUT
+        # Reuse one client per run for connection pooling (mirrors the scrape client); the GET+PUT
         # pair per commit then shares the same TLS connection. Injectable for tests.
         self._client = client or httpx.Client(timeout=config.GITHUB_TIMEOUT.total_seconds())
 

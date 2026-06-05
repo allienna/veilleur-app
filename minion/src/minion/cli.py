@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 
 from minion.clock import Clock, SystemClock
 from minion.generate.ports import GenerateRunner
-from minion.ingest.ports import GmailClient, JinaClient
+from minion.ingest.ports import GmailClient, ScraperClient
 from minion.logging import configure_logging
 from minion.models import RunStatus
 from minion.notify import Notifier
@@ -97,18 +97,18 @@ def build_notifier(client: firestore.Client) -> Notifier | None:
 
 
 def build_clients() -> tuple[
-    GmailClient, JinaClient, GenerateRunner, ImageGenerator, PromptRewriter, ContentRepository
+    GmailClient, ScraperClient, GenerateRunner, ImageGenerator, PromptRewriter, ContentRepository
 ]:
     """Construct the production ingestion / generation / publishing clients (lazy — needs creds)."""
     from minion.generate.runner import ClaudeGenerateRunner
     from minion.ingest.gmail import GmailReaderClient
-    from minion.ingest.jina import JinaReaderClient
+    from minion.ingest.scraper import LocalExtractorClient
     from minion.publish.github import GitHubContentRepository
     from minion.publish.imagen import ClaudePromptRewriter, VertexImageGenerator
 
     return (
         GmailReaderClient(),
-        JinaReaderClient(),
+        LocalExtractorClient(),
         ClaudeGenerateRunner(),
         VertexImageGenerator(),
         ClaudePromptRewriter(),
@@ -135,12 +135,17 @@ def run(date: str | None) -> None:
     target = date or clock.now().strftime("%Y-%m-%d")
     client = build_firestore_client()
     run_store, lock_store, article_store = build_stores(client, clock)
-    gmail_client, jina_client, generate_runner, image_generator, prompt_rewriter, content_repo = (
-        build_clients()
-    )
+    (
+        gmail_client,
+        scraper_client,
+        generate_runner,
+        image_generator,
+        prompt_rewriter,
+        content_repo,
+    ) = build_clients()
     steps = build_pipeline(
         gmail_client,
-        jina_client,
+        scraper_client,
         generate_runner,
         image_generator,
         prompt_rewriter,

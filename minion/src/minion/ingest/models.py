@@ -15,7 +15,7 @@ from pydantic import BaseModel, ConfigDict
 
 
 class SourceOutcome(StrEnum):
-    """The terminal outcome of scraping a single candidate URL via Jina Reader."""
+    """The terminal outcome of scraping a single candidate URL."""
 
     ok = "ok"
     paywalled = "paywalled"
@@ -34,7 +34,7 @@ class Newsletter(BaseModel):
 
 
 class ScrapedSource(BaseModel):
-    """The result of scraping one candidate URL through Jina Reader.
+    """The result of scraping one candidate URL.
 
     `markdown` and `title` are populated only when `outcome is SourceOutcome.ok`; a
     `paywalled` or `failed` source carries the outcome and no usable content.
