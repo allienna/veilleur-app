@@ -101,7 +101,7 @@ def test_transport_error_fails_run(
     runner = FakeGenerateRunner(error=GenerateTransportError("boom"))
     final = _run(runner, run_store, lock_store, clock)
     assert final.status is RunStatus.failure
-    assert len(runner.calls) == 3  # initial + 2 transport retries
+    assert len(runner.calls) == 1 + config.CLAUDE_TRANSPORT_RETRIES  # initial + transport retries
 
 
 def test_unknown_theme_normalized_run_succeeds(run_store, lock_store, clock) -> None:

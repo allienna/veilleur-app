@@ -9,6 +9,7 @@ from typing import Any
 
 import pytest
 
+from minion import config
 from minion.clock import FrozenClock
 from minion.config import PARIS_TZ
 from minion.generate.fakes import FakeGenerateRunner
@@ -83,7 +84,7 @@ def test_transport_error_retries_then_propagates() -> None:
     step = GenerateStep(runner=runner, sleep=lambda _s: None)
     with pytest.raises(GenerateTransportError):
         step.run(_ctx({"context": AssembledContext(sources=[])}))
-    assert len(runner.calls) == 3  # initial + CLAUDE_TRANSPORT_RETRIES (2)
+    assert len(runner.calls) == 1 + config.CLAUDE_TRANSPORT_RETRIES  # initial + transport retries
 
 
 # --- GenerateStep: validation retry loop (T-3.3) -----------------------------------------
@@ -113,7 +114,7 @@ def test_exhausted_validation_retries_raises() -> None:
     step = GenerateStep(runner=runner, sleep=lambda _s: None)
     with pytest.raises(GenerationFailedError, match="linkedin_too_long"):
         step.run(_ctx({"context": AssembledContext(sources=[])}))
-    assert len(runner.calls) == 3  # initial + MAX_GENERATE_RETRIES (2)
+    assert len(runner.calls) == 1 + config.MAX_GENERATE_RETRIES  # initial + validation retries
 
 
 # --- ValidateOutputStep (T-3.4) ----------------------------------------------------------
