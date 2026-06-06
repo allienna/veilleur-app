@@ -92,11 +92,15 @@ Replace the `validate_output` stub with deterministic checks (PRD FR-A2):
 ### FR-5: Copyright post-validator (constitution §4 / FR-A3)
 A deterministic validator run over the generated article against the **original source texts**
 (the F-004 `SourceSet` markdown), enforcing:
-- Direct quotes **≤ 30 words** per source, **≤ 1** quote per source.
+- Direct quotes **≤ 30 words** per source, **≤ 1 substantial (≥6-word) quote** per source, counted
+  only against the single source a quote appears in verbatim (constitution §4 recalibration,
+  F-013 burn-in: short spans like product names don't count; phrasing shared by ≥2 sources pins to
+  none). Threshold `MIN_COUNTED_QUOTE_WORDS=6`.
 - Every cited fact **attributes its source by name and links its URL** (tractable rule — Open
   Questions).
-- **No paragraph reproduces a source paragraph wholesale** — an n-gram / shingle overlap check
-  (threshold — Open Questions).
+- **No paragraph reproduces a source paragraph wholesale** — an n-gram / shingle overlap check;
+  `WHOLESALE_NGRAM=20` normalized tokens (recalibrated from 12 in F-013 burn-in — a 12-token run
+  of generic prose was a false positive).
 - **No paywalled source content** appears (assert none leaked; they are excluded upstream).
 Violations are validation failures feeding the FR-6 retry loop.
 
