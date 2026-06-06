@@ -166,7 +166,14 @@ class GenerateStep:
             feedback = [e.message for e in report.errors]
             ctx.log.warning(
                 "article failed validation",
-                extra={"attempt": attempt, "errors": [e.code for e in report.errors]},
+                extra={
+                    "attempt": attempt,
+                    "errors": [e.code for e in report.errors],
+                    # Full messages carry the offending quotes / shared n-gram; bodyHead lets
+                    # burn-in judge real-vs-false without re-running (F-013).
+                    "errorMessages": [e.message for e in report.errors],
+                    "bodyHead": article.body[:1000],
+                },
             )
 
         codes = ", ".join(e.code for e in last_errors)
