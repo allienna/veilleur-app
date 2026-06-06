@@ -126,9 +126,16 @@ THEME_ALLOWLIST: frozenset[str] = frozenset(
 DEFAULT_THEME: str = "other"  # unknown theme normalizes here (PRD §6 — not an error)
 
 # Copyright post-validator (constitution §4 / FR-A3).
+# Thresholds recalibrated during F-013 burn-in against real 47-source days: the originals fired
+# on non-infringing content — product names ("Large Industry Model") counted as quotes, and a
+# single 12-token run of generic French prose counted as "wholesale". The intent of §4 is to
+# bar *substantial* verbatim quoting and passage-level copying, not proper nouns or stock phrasing.
 MAX_QUOTE_WORDS: int = 30  # max words in a single direct quote per source
-MAX_QUOTES_PER_SOURCE: int = 1  # max distinct quotes attributable to one source
-WHOLESALE_NGRAM: int = 12  # ≥ this many consecutive shared tokens ⇒ wholesale reproduction
+MAX_QUOTES_PER_SOURCE: int = 1  # max distinct substantial quotes attributable to one source
+# A quoted span counts toward MAX_QUOTES_PER_SOURCE only at/above this length — short spans are
+# product names / labels / emphasis, not copyrightable excerpts.
+MIN_COUNTED_QUOTE_WORDS: int = 6
+WHOLESALE_NGRAM: int = 20  # ≥ this many consecutive shared tokens ⇒ wholesale reproduction
 
 # Agentic validation-retry budget (PRD §6): re-invoke `/generate` with errors fed back.
 MAX_GENERATE_RETRIES: int = 2

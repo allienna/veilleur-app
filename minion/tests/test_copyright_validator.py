@@ -47,11 +47,22 @@ def test_quote_over_thirty_words_flagged() -> None:
 
 
 def test_more_than_one_quote_per_source_flagged() -> None:
+    # Two substantial (≥ MIN_COUNTED_QUOTE_WORDS) distinct quotes from the one source.
     body = (
-        "It noted «Kubernetes introduced sidecar containers» early on, "
-        "and later «changes how init containers are scheduled» as well."
+        "It noted «Kubernetes introduced sidecar containers as a first class feature» early on, "
+        "and later «changes how init containers are scheduled and managed across» as well."
     )
     assert "too_many_quotes" in _codes(body)
+
+
+def test_short_quotes_not_counted_toward_limit() -> None:
+    # Product names / short labels quoted repeatedly from one source must NOT trip the limit —
+    # they are not copyrightable excerpts (the 47-source burn-in false positive).
+    body = (
+        "The «Large Industry Model» and the «first class feature» both shipped, "
+        "and the «sidecar containers» work continues."
+    )
+    assert "too_many_quotes" not in _codes(body)
 
 
 def test_quote_shared_by_multiple_sources_not_counted() -> None:

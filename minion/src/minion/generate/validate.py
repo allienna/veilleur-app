@@ -146,6 +146,10 @@ def validate_copyright(
                     message=f"direct quote exceeds {config.MAX_QUOTE_WORDS} words",
                 )
             )
+        # Only substantial spans count toward the per-source limit: short quoted spans are
+        # product names / labels / emphasis, not copyrightable excerpts (constitution §4 intent).
+        if len(quote.split()) < config.MIN_COUNTED_QUOTE_WORDS:
+            continue
         containing = [url for url, text in normalized_sources.items() if normalized_quote in text]
         if len(containing) == 1:
             per_source_quotes[containing[0]].append(quote)

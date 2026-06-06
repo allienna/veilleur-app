@@ -112,7 +112,12 @@ def test_unknown_theme_normalized_run_succeeds(run_store, lock_store, clock) -> 
 
 
 def test_copyright_reproduction_exhausts_retries_and_fails(run_store, lock_store, clock) -> None:
-    reproduced = "the quick brown fox jumps over the lazy dog again and again over the hill today"
+    # ≥ WHOLESALE_NGRAM (20) tokens of verbatim shared text so a genuine passage-level copy is
+    # still caught after the burn-in recalibration.
+    reproduced = (
+        "the quick brown fox jumps over the lazy dog again and again over the hill today "
+        "while the slow green turtle quietly watches the wide river flow past the old stone bridge"
+    )
     jina = FakeScraperClient(
         results={
             URLS[0]: ScrapedSource(
