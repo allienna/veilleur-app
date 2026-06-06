@@ -104,9 +104,10 @@ CLAUDE_CMD: tuple[str, ...] = (
 )
 CLAUDE_TIMEOUT: timedelta = timedelta(minutes=8)  # PRD §4: ≤4 min target, 8 min ceiling
 CLAUDE_BACKOFF_BASE: timedelta = timedelta(seconds=2)  # transport-retry backoff unit
-CLAUDE_TRANSPORT_RETRIES: int = (
-    2  # retries on a Claude transport error (PRD §6), distinct from validation retries
-)
+# Retry budget is bounded by constitution §6 (20-min hard run timeout): a real `/generate` on a
+# dense multi-source day takes ~6-7 min, so the generate loop must fit <=2 invocations to clear
+# end-to-end (scrape + Imagen + GitHub) inside 20 min. Lowered from 2 each during F-013 burn-in.
+CLAUDE_TRANSPORT_RETRIES: int = 1  # retries on a Claude transport error, distinct from validation
 
 # Per-run caps (PRD §3 Scalability). Token budgets use a char heuristic (AD-10/AD-12), not a
 # real tokenizer — a guard, not an exact bound.
@@ -126,12 +127,21 @@ THEME_ALLOWLIST: frozenset[str] = frozenset(
 DEFAULT_THEME: str = "other"  # unknown theme normalizes here (PRD §6 — not an error)
 
 # Copyright post-validator (constitution §4 / FR-A3).
+# Thresholds recalibrated during F-013 burn-in against real 47-source days: the originals fired
+# on non-infringing content — product names ("Large Industry Model") counted as quotes, and a
+# single 12-token run of generic French prose counted as "wholesale". The intent of §4 is to
+# bar *substantial* verbatim quoting and passage-level copying, not proper nouns or stock phrasing.
 MAX_QUOTE_WORDS: int = 30  # max words in a single direct quote per source
-MAX_QUOTES_PER_SOURCE: int = 1  # max distinct quotes attributable to one source
-WHOLESALE_NGRAM: int = 12  # ≥ this many consecutive shared tokens ⇒ wholesale reproduction
+MAX_QUOTES_PER_SOURCE: int = 1  # max distinct substantial quotes attributable to one source
+# A quoted span counts toward MAX_QUOTES_PER_SOURCE only at/above this length — short spans are
+# product names / labels / emphasis, not copyrightable excerpts.
+MIN_COUNTED_QUOTE_WORDS: int = 6
+WHOLESALE_NGRAM: int = 20  # ≥ this many consecutive shared tokens ⇒ wholesale reproduction
 
-# Agentic validation-retry budget (PRD §6): re-invoke `/generate` with errors fed back.
-MAX_GENERATE_RETRIES: int = 2
+# Agentic validation-retry budget (PRD §6): re-invoke `/generate` with errors fed back. Lowered
+# 2 -> 1 in F-013 burn-in so the generate loop (<=2 invocations, ~6-7 min each) plus scrape +
+# Imagen + GitHub fits the constitution §6 20-min hard run timeout; the job timeout is the backstop.
+MAX_GENERATE_RETRIES: int = 1
 
 # --- Publish: Imagen + GitHub + Firestore (F-006) ----------------------------------------
 

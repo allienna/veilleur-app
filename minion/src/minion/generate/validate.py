@@ -124,9 +124,21 @@ def validate_copyright(
     body = article.body
 
     # 1. Direct-quote length and per-source count.
-    per_source_quotes: dict[str, int] = {s.url: 0 for s in sources}
+    #
+    # A quote counts toward a source's per-source limit only when it appears verbatim in
+    # *exactly one* source. With many topically-overlapping sources, a short normalized quote is
+    # a substring of several sources' markdown; attributing it to every container inflates counts
+    # and trips `too_many_quotes` on phrasing the article never over-quoted (the model then can't
+    # satisfy the retry). A span shared by ≥2 sources is common reporting, not single-source
+    # over-quoting, so it pins to none. Identical spans are de-duplicated (constitution §4 / FR-5).
+    per_source_quotes: dict[str, list[str]] = {s.url: [] for s in sources}
     normalized_sources = {s.url: " ".join(_normalize_tokens(s.markdown)) for s in sources}
+    seen_quotes: set[str] = set()
     for quote in _find_quotes(body):
+        normalized_quote = " ".join(_normalize_tokens(quote))
+        if not normalized_quote or normalized_quote in seen_quotes:
+            continue
+        seen_quotes.add(normalized_quote)
         if len(quote.split()) > config.MAX_QUOTE_WORDS:
             errors.append(
                 ValidationError(
@@ -134,16 +146,25 @@ def validate_copyright(
                     message=f"direct quote exceeds {config.MAX_QUOTE_WORDS} words",
                 )
             )
-        normalized_quote = " ".join(_normalize_tokens(quote))
-        for source in sources:
-            if normalized_quote and normalized_quote in normalized_sources[source.url]:
-                per_source_quotes[source.url] += 1
+        # Only substantial spans count toward the per-source limit: short quoted spans are
+        # product names / labels / emphasis, not copyrightable excerpts (constitution §4 intent).
+        if len(quote.split()) < config.MIN_COUNTED_QUOTE_WORDS:
+            continue
+        containing = [url for url, text in normalized_sources.items() if normalized_quote in text]
+        if len(containing) == 1:
+            per_source_quotes[containing[0]].append(quote)
     for source in sources:
-        if per_source_quotes[source.url] > config.MAX_QUOTES_PER_SOURCE:
+        quotes = per_source_quotes[source.url]
+        if len(quotes) > config.MAX_QUOTES_PER_SOURCE:
             errors.append(
                 ValidationError(
                     code="too_many_quotes",
-                    message=f"more than {config.MAX_QUOTES_PER_SOURCE} quote(s) from {source.url}",
+                    # Include the offending spans so burn-in can judge real over-quoting vs a
+                    # validator artefact without re-running (F-013).
+                    message=(
+                        f"more than {config.MAX_QUOTES_PER_SOURCE} quote(s) from "
+                        f"{source.url}: {quotes!r}"
+                    ),
                 )
             )
 
@@ -155,11 +176,15 @@ def validate_copyright(
         source_ngrams: set[tuple[str, ...]] = set()
         for paragraph in _paragraphs(source.markdown):
             source_ngrams |= _ngrams(_normalize_tokens(paragraph), config.WHOLESALE_NGRAM)
-        if source_ngrams & article_ngrams:
+        shared = source_ngrams & article_ngrams
+        if shared:
+            # Surface one shared run so burn-in can tell genuine copying from common boilerplate
+            # (e.g. a stock funding-round phrase) without re-running (F-013).
+            sample = " ".join(next(iter(shared)))
             errors.append(
                 ValidationError(
                     code="wholesale_reproduction",
-                    message=f"article reproduces a passage of {source.url} verbatim",
+                    message=f"article reproduces a passage of {source.url} verbatim: {sample!r}",
                 )
             )
 

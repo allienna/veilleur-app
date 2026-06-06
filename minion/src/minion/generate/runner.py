@@ -105,7 +105,11 @@ class ClaudeGenerateRunner:
                 os.unlink(context_path)
 
         if result.returncode != 0:
+            # claude `--output-format json` reports auth / usage / API errors in the stdout
+            # envelope (`is_error`, `api_error_status`, `result`), not stderr — surface both so a
+            # silent exit 1 is diagnosable (F-013 burn-in observability).
             raise GenerateTransportError(
-                f"claude /generate exited {result.returncode}: {result.stderr[:500]}"
+                f"claude /generate exited {result.returncode}: "
+                f"stderr={result.stderr[:300]!r} stdout={result.stdout[:500]!r}"
             )
         return _parse_output(result.stdout)
