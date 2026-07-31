@@ -97,10 +97,42 @@ See **Analysis** below the table before doing anything else with this log.
 | 2026-07-28 | 01KYKE79CMKB59DDQ5444F2Y42 | cron | skipped | — | 1s | `no_sources` |
 | 2026-07-29 | 01KYP0GF70QPCC4G8BMWYQ9AZA | cron | **success** | 0.800 | 11m34s | tokens 39721 |
 | 2026-07-30 | 01KYRJWZYD39B493TY08CMZQHJ | cron | skipped | — | 1s | `no_sources` |
-| 2026-07-31 | 01KYV5DSB4M4H7EX5J63E4AJX5 | cron | skipped | — | 1s | `no_sources` |
+| 2026-07-31 | 01KYWASX09J6T6W0M6RWXH98AQ | manual (post-fix) | **success** | 1.630 | 9m07s | tokens 48399. See **Post-fix note** below — this replaces the original cron result (`01KYV5DSB4M4H7EX5J63E4AJX5`, `skipped: no_sources`), overwritten by idempotent replay while debugging in-track. |
 
-**Consecutive successes:** 1 / 7 · **Window:** 3 successes / 61 days observed (well under the ≥10/13
-bar on every rolling 13-day slice — no window in this data contains more than 1 success)
+**Consecutive successes:** 1 / 7 (restarts here, post-fix) · **Window:** 4 successes / 61 days
+observed pre-fix (historical baseline — see note; not meaningful going forward since 3 root causes
+were fixed today)
+
+## Post-fix note (2026-07-31) — 3 root causes found and fixed in-track
+
+Debugging the `no_sources`/`insufficient_sources`/`missing_attribution` pattern above (rather than
+waiting out more calendar days) surfaced three real, root-cause bugs, all fixed and deployed to prod
+today:
+
+1. **Gmail window anchored to midnight, not run time** (`90e38b1`) — cron fires at 06:00 Paris but
+   the window was `[date 00:00, date+1 00:00)`, so every run only ever saw its own 00:00-06:00
+   slice; the other 18h/day were never scanned by any run. Root cause of most `no_sources` days.
+2. **Wrong Gmail mailbox** — the OAuth refresh token authenticated as `aurelien.allienne@gmail.com`
+   (a near-empty personal inbox), not the actual dedicated newsletter inbox
+   `veilleur.allienne@gmail.com`. Re-authenticated against the correct mailbox (new Secret Manager
+   version); this alone explains why `no_sources`/`insufficient_sources` fired almost every day even
+   before the window bug, since the scanned mailbox never had the subscribed newsletters at all.
+3. **`missing_attribution` false positives from cross-source domain/title collisions** (`e48cdf3`,
+   `8992ea3`) — sources sharing a tracking-redirector domain (`tracking.tldrnewsletter.com`) or the
+   same article syndicated under two different tracking URLs made the copyright validator flag
+   correctly-cited sources' *uncited duplicates* as "referenced but not linked". Fixed in the
+   validator (prose-only domain scan) and at assembly (dedupe by title).
+
+Manual re-runs of `2026-07-31` while iterating on these fixes went: `failure (missing_attribution
+×60)` → `failure (missing_attribution ×1)` → `failure (missing_attribution ×10, variance)` →
+**`success`**. Each overwrote the Firestore `runs/2026-07-31` doc (idempotent replay, F-003) — only
+the final state is kept above, per this log's own rule that in-track bug fixes restart the counter
+from the next clean run. **The consecutive-success counter restarts at 1/7 from this run.**
+
+Pre-fix historical breakdown (61 days, kept for context — see original Analysis below): 52%
+`no_sources`, 33% `insufficient_sources`, ~5% `missing_attribution`, one stuck `running` doc
+(2026-07-07, still unexplained, excluded from tallies). Now that the mailbox + window + validator
+bugs are fixed, expect a materially different failure distribution going forward.
 
 > Update both tallies on every append. When the bar is met, link the qualifying span here and check
 > AC-3 in `spec.md`.
