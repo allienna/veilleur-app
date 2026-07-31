@@ -48,9 +48,16 @@ def _credentials() -> Credentials:
 
 
 def _window_query(date: str) -> str:
-    """Gmail query for unread messages in the calendar day `date` (Europe/Paris), AD-4."""
-    start = datetime.strptime(date, "%Y-%m-%d").replace(tzinfo=PARIS_TZ)
-    end = start + timedelta(days=1)
+    """Gmail query for unread messages in the 24h preceding `date`'s 06:00 Paris run time, AD-4.
+
+    Anchored at 06:00 (the cron fire time, `infra/scheduler.tf` `schedule = "0 6 * * *"`), not
+    midnight: a midnight-to-midnight window is still in the future at 06:00, so a cron-fired run
+    would only ever see its 00:00-06:00 slice. Ending the window at 06:00 keeps it a pure
+    function of `date` (idempotent replay, AD-4) while guaranteeing it has fully elapsed by the
+    time any run — cron or replay — executes.
+    """
+    end = datetime.strptime(date, "%Y-%m-%d").replace(hour=6, tzinfo=PARIS_TZ)
+    start = end - timedelta(days=1)
     return f"is:unread after:{int(start.timestamp())} before:{int(end.timestamp())}"
 
 

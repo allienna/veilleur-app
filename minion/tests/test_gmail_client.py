@@ -76,10 +76,10 @@ def _build_service(messages: list[dict[str, Any]]) -> tuple[_Service, dict[str, 
     return _Service(_Users(_Messages(listing, by_id, rec))), rec
 
 
-def test_window_query_is_calendar_day_paris() -> None:
+def test_window_query_is_24h_ending_at_run_anchor_paris() -> None:
     q = _window_query("2026-06-01")
-    start = datetime(2026, 6, 1, tzinfo=PARIS_TZ)
-    end = start + timedelta(days=1)
+    end = datetime(2026, 6, 1, 6, tzinfo=PARIS_TZ)
+    start = end - timedelta(days=1)
     assert q == f"is:unread after:{int(start.timestamp())} before:{int(end.timestamp())}"
 
 
