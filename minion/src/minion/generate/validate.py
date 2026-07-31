@@ -189,11 +189,19 @@ def validate_copyright(
             )
 
     # 3. Attribution: a referenced source (name/domain in body) must link its URL (AD-7).
-    lower_body = body.lower()
+    #
+    # The domain check must only match a domain mentioned in *readable prose*, not one merely
+    # embedded inside another citation's markdown link target — e.g. two sources sharing a
+    # tracking-redirector domain (`tracking.tldrnewsletter.com/CL0/...`) or the same publication
+    # would otherwise cross-contaminate: citing source A makes A's domain appear in body text via
+    # its own `(url)`, which then falsely flags every *other*, genuinely-uncited source B on that
+    # same domain as "referenced but not attributed" (the 2026-07-31 burn-in false positive).
+    prose_only = re.sub(r"\]\(https?://[^\s)]+\)", "]", body)
+    lower_prose = prose_only.lower()
     for source in sources:
         domain = urlparse(source.url).netloc.lower().removeprefix("www.")
-        referenced = (domain and domain in lower_body) or (
-            bool(source.title) and source.title.lower() in lower_body
+        referenced = (domain and domain in lower_prose) or (
+            bool(source.title) and source.title.lower() in lower_prose
         )
         if referenced and source.url not in body:
             errors.append(

@@ -12,7 +12,10 @@ import re
 from html.parser import HTMLParser
 from urllib.parse import urlparse
 
-# Substrings that mark list-management / subscription links rather than articles.
+# Substrings that mark list-management / subscription / sponsor-chrome links rather than
+# articles. Checked against the raw (possibly tracking-wrapped) URL, so a substring survives even
+# when the real target is itself URL-encoded inside a redirector (e.g. TLDR's
+# `tracking.tldrnewsletter.com/CL0/https%3A%2F%2Fadvertise.tldr.tech%2F...`).
 _NON_ARTICLE_SUBSTRINGS: tuple[str, ...] = (
     "unsubscribe",
     "list-manage",
@@ -23,6 +26,8 @@ _NON_ARTICLE_SUBSTRINGS: tuple[str, ...] = (
     "email-settings",
     "manage-subscription",
     "manage_subscription",
+    "advertise",
+    "web-version",
 )
 
 # Social / share hosts — newsletter share buttons, never the article itself.

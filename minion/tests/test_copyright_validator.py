@@ -109,6 +109,22 @@ def test_referenced_source_without_link_flagged() -> None:
     assert "missing_attribution" in _codes(body)
 
 
+def test_shared_domain_from_other_citation_not_flagged() -> None:
+    # Two sources share a domain (e.g. a tracking-redirector or the same publication). Citing
+    # source A's own link must not make source B's domain "found in body" and falsely flag B as
+    # referenced-but-unlinked when the article never actually discusses B (2026-07-31 burn-in).
+    other = ContextSource(
+        url="https://thenewstack.io/other-piece",
+        title="Some Other Piece",
+        markdown="Unrelated content.",
+    )
+    body = (
+        "A new scheduling model for sidecars landed recently. See the writeup at "
+        "[K8s Sidecars](https://thenewstack.io/k8s-sidecars) for the details."
+    )
+    assert validate_copyright(_article(body), [SOURCE, other]) == []
+
+
 def test_validate_article_combines_structural_and_copyright() -> None:
     report = validate_article(_article("a clean body", linkedin="x" * 3001), [SOURCE])
     codes = {e.code for e in report.errors}

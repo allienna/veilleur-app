@@ -28,6 +28,17 @@ def test_drops_management_and_mailto_links() -> None:
     assert extract_article_urls(body) == ["https://news.co/article"]
 
 
+def test_drops_sponsor_chrome_links() -> None:
+    # TLDR-style tracking-wrapped ad + "view in browser" footer links (2026-07-31 burn-in
+    # missing_attribution root cause) — never real article content, just newsletter chrome.
+    body = (
+        '<a href="https://example.com/real">Real</a>'
+        '<a href="https://tracking.example.com/CL0/https%3A%2F%2Fadvertise.tldr.tech%2F">Ad</a>'
+        '<a href="https://tracking.example.com/CL0/https%3A%2F%2Fa.tldrnewsletter.com%2Fweb-version">Web</a>'
+    )
+    assert extract_article_urls(body) == ["https://example.com/real"]
+
+
 def test_drops_social_share_and_asset_links() -> None:
     body = (
         '<a href="https://example.com/real">Real</a>'
