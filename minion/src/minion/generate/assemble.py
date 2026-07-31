@@ -15,12 +15,23 @@ from minion.logging import BoundLogger
 
 
 def assemble_context(source_set: SourceSet, *, log: BoundLogger) -> AssembledContext:
-    """Select OK sources in order, dropping trailing ones until within the input-token budget."""
+    """Select OK sources in order, dropping trailing ones until within the input-token budget.
+
+    Sources are also deduped by title (first-seen kept): the same article is sometimes syndicated
+    across multiple newsletter editions with distinct tracking-wrapper URLs (e.g. TLDR Dev and
+    TLDR AI both linking the same post). Left undeduped, the model cites one URL while the article
+    prose still names the shared title, which makes the copyright validator's title-attribution
+    check flag the other, uncited duplicate as "referenced but not linked" (2026-07-31 burn-in).
+    """
     selected: list[ContextSource] = []
+    seen_titles: set[str] = set()
     used_tokens = 0
     dropped = 0
 
     for source in source_set.ok_sources:
+        title_key = (source.title or "").strip().lower()
+        if title_key and title_key in seen_titles:
+            continue
         markdown = source.markdown or ""
         cost = (
             estimate_tokens(markdown)
@@ -32,6 +43,8 @@ def assemble_context(source_set: SourceSet, *, log: BoundLogger) -> AssembledCon
             break
         selected.append(ContextSource(url=source.url, title=source.title or "", markdown=markdown))
         used_tokens += cost
+        if title_key:
+            seen_titles.add(title_key)
 
     if dropped:
         log.info(

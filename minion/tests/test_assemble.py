@@ -53,3 +53,25 @@ def test_truncates_to_input_budget(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def test_empty_source_set_yields_empty_context() -> None:
     assert assemble_context(SourceSet(sources=[]), log=LOG).sources == []
+
+
+def test_dedupes_by_title_keeping_first_seen() -> None:
+    # Same article syndicated across two newsletter editions with distinct tracking URLs but an
+    # identical title — only the first-seen copy should survive (2026-07-31 burn-in).
+    dup = ScrapedSource(
+        url="https://tracking.example.com/edition-a/real-post",
+        outcome=SourceOutcome.ok,
+        title="How ChatGPT Optimizes Its Agent Loop",
+        markdown="body a",
+    )
+    dup_other_edition = ScrapedSource(
+        url="https://tracking.example.com/edition-b/real-post",
+        outcome=SourceOutcome.ok,
+        title="How ChatGPT Optimizes Its Agent Loop",
+        markdown="body b",
+    )
+    context = assemble_context(SourceSet(sources=[dup, dup_other_edition, _ok(0)]), log=LOG)
+    assert [s.url for s in context.sources] == [
+        "https://tracking.example.com/edition-a/real-post",
+        "https://s.io/0",
+    ]
