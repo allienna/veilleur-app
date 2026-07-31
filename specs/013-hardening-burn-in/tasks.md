@@ -70,6 +70,6 @@
   - **Do**: Record demo-path flow (PWA open → supervise/trigger → read article → LinkedIn share + brief spec-coding narrative). Store offline-retrievable; link from `demo-runbook.md`.
   - **Test**: Video retrievable offline by 2026-06-09; pointer in `demo-runbook.md`. Satisfies AC-4.
 
-- [ ] **T-4.3**: Final CI regression guard (AC-11)
+- [x] **T-4.3**: Final CI regression guard (AC-11)
   - **Do**: Run full suites after all changes land.
   - **Test**: `pnpm lint && pnpm typecheck && pnpm check:email && pnpm check:codegen` and `cd minion && uv run ruff check . && uv run ruff format --check . && uv run pyright && uv run pytest` all green. Satisfies AC-11.
