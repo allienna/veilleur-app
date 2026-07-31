@@ -23,7 +23,9 @@ Thumbs.db
 *.key
 
 # Local agent state (Claude Code worktrees, conductor metadata)
-.claude/
+# Anchored to repo root: minion/.claude/commands/ is vendored production code (constitution
+# §3/§4) and must stay tracked, not swallowed by this rule.
+/.claude/
 .conductor/
 
 # IDE
