@@ -18,8 +18,14 @@ Monorepo for the Veilleur tech-watch pipeline. Read this first; it is the canoni
 
 ## Build & Run Commands
 
+**Toolchain**: pinned in `mise.toml` (node, pnpm, uv, just) — run `mise install` once per clone/CI
+runner. **Shortcuts**: a root `Justfile` wraps the commands below (`just lint`, `just typecheck`,
+`just ci`, `just dev`, `just deploy-minion`, …) — run `just --list` for the full set. The Justfile
+calls the same scripts/commands documented here; it adds no new logic, so either form works.
+
 ### Bootstrap
 ```bash
+mise install                 # node, pnpm, uv, just (see mise.toml)
 pnpm install                 # TS workspaces (pwa, trigger-api, shared)
 cd minion && uv sync         # Python workspace
 ```
