@@ -15,10 +15,12 @@ markers matched on the raw HTML (FR-3).
 
 from __future__ import annotations
 
+import threading
 import time
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from concurrent.futures import TimeoutError as FuturesTimeout
+from urllib.parse import urlparse
 
 import httpx
 import trafilatura
@@ -27,6 +29,7 @@ from minion.config import (
     PAYWALL_MARKERS,
     SCRAPE_BACKOFF_BASE,
     SCRAPE_DEADLINE,
+    SCRAPE_HOST_MIN_INTERVAL,
     SCRAPE_MAX_RETRIES,
     SCRAPE_TIMEOUT,
     SCRAPE_USER_AGENT,
@@ -77,9 +80,30 @@ class LocalExtractorClient:
             headers={"User-Agent": SCRAPE_USER_AGENT},
         )
         self._sleep = sleep
+        self._host_lock = threading.Lock()
+        self._host_next_ok: dict[str, float] = {}
+
+    def _throttle_host(self, url: str) -> None:
+        """Enforce a minimum gap between requests to the same host across all workers.
+
+        `SCRAPE_WORKERS` only bounds *global* concurrency — many URLs landing on one host (a
+        newsletter linking dozens of posts on the same domain, or a tracking-redirect host like
+        Beehiiv's `link.mail.beehiiv.com`) still get hit by several workers at once, which looks
+        like abuse to that host's own rate limiter (429/403), not to us.
+        """
+        host = urlparse(url).netloc.lower()
+        with self._host_lock:
+            now = time.monotonic()
+            wait = self._host_next_ok.get(host, now) - now
+            self._host_next_ok[host] = max(now, self._host_next_ok.get(host, now)) + (
+                SCRAPE_HOST_MIN_INTERVAL.total_seconds()
+            )
+        if wait > 0:
+            self._sleep(wait)
 
     def _try_once(self, url: str) -> ScrapedSource | None:
         """One fetch+extract attempt. Returns a terminal `ScrapedSource`, or None to retry."""
+        self._throttle_host(url)
         try:
             resp = self._client.get(url)
         except httpx.TransportError:

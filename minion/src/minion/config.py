@@ -75,6 +75,11 @@ SCRAPE_MAX_RETRIES: int = 2  # retries after the first attempt on transient erro
 SCRAPE_BACKOFF_BASE: timedelta = timedelta(seconds=1)  # exponential backoff unit
 # Bounded fetch-pool concurrency — politeness per-origin, not central-throttle avoidance.
 SCRAPE_WORKERS: int = 6
+# Minimum spacing between requests to the *same host* (2026-08-02 burn-in: newsletters that
+# link dozens of posts on one host — e.g. Substack, or a tracking-redirect domain like Beehiiv's
+# link.mail.beehiiv.com — got 6 workers hitting that host at once, tripping its own rate limiter
+# (429/403) even though SCRAPE_WORKERS caps *global* concurrency, not per-host.
+SCRAPE_HOST_MIN_INTERVAL: timedelta = timedelta(seconds=2)
 # Overall scrape budget (PRD §4: ≤3 min target, 5 min ceiling).
 SCRAPE_DEADLINE: timedelta = timedelta(minutes=4)
 

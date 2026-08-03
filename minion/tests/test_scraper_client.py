@@ -138,3 +138,30 @@ def test_empty_urls_returns_empty() -> None:
         return httpx.Response(200)
 
     assert _make_client(handler).scrape([]) == []
+
+
+def test_throttles_concurrent_requests_to_same_host() -> None:
+    # 2026-08-02 burn-in: a newsletter linking dozens of posts on one host (or a tracking-redirect
+    # domain like Beehiiv's) got hit by several workers at once and was rate-limited (429/403) by
+    # the host itself. Same-host requests must be spaced out even under concurrency.
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, text=_ARTICLE_HTML, headers=_HTML_HEADERS)
+
+    waits: list[float] = []
+    client = LocalExtractorClient(
+        client=httpx.Client(transport=httpx.MockTransport(handler)), sleep=waits.append
+    )
+    client.scrape(["https://example.com/a", "https://example.com/b"])
+    assert any(w > 0 for w in waits)
+
+
+def test_does_not_throttle_across_different_hosts() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, text=_ARTICLE_HTML, headers=_HTML_HEADERS)
+
+    waits: list[float] = []
+    client = LocalExtractorClient(
+        client=httpx.Client(transport=httpx.MockTransport(handler)), sleep=waits.append
+    )
+    client.scrape(["https://a.example.com/x", "https://b.example.com/y"])
+    assert waits == []
