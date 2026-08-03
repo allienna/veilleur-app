@@ -91,6 +91,16 @@ Firebase Hosting config lives in repo-root `firebase.json` / `.firebaserc` (proj
 `veilleur-app`). Wiring this into CI (Workload Identity Federation) is deferred to a later
 track.
 
+**Cache headers** (`firebase.json` `hosting.headers`, JSON has no comment syntax so the
+rationale lives here): default `no-cache` on everything, since `index.html` is served for every
+route via the SPA rewrite and none of the top-level files (`sw.js`, `registerSW.js`,
+`manifest.webmanifest`, `icons/*`) have a content hash in their name. One override, `**/*.@(js|
+css)` → a year, `immutable`: Vite's chunk filenames *are* content-hashed, so caching those forever
+is safe. `sw.js`/`registerSW.js` end in `.js` too, so they'd otherwise inherit that long cache —
+without the explicit no-cache override back on them, a deployed service-worker update could take
+up to a year to reach a client, since the browser wouldn't even ask the network for a new copy.
+Header rules are matched last-one-wins for a given path, so ordering in the array matters.
+
 ## Known follow-ups
 
 - **Performance**: see [`PERF.md`](PERF.md) for the LCP / cached-reload measurement method
