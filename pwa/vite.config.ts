@@ -32,11 +32,18 @@ export default defineConfig({
         background_color: "#f8f7f5",
         theme_color: "#f59f0a",
         start_url: "/",
-        // Scalable SVG icon (any + maskable). A raster apple-touch-icon.png for older
-        // iOS home-screen polish is a follow-up asset task (see pwa/README).
+        // Scalable SVG icons: `icon.svg` (rounded square, browsers that render the manifest icon
+        // as-is) and `icon-maskable.svg` (full-bleed, safe-zone-respecting — Android etc. apply
+        // their own mask/crop). `apple-touch-icon.png` (index.html) is separate: iOS doesn't
+        // accept SVG there.
         icons: [
           { src: "/icons/icon.svg", sizes: "any", type: "image/svg+xml", purpose: "any" },
-          { src: "/icons/icon.svg", sizes: "any", type: "image/svg+xml", purpose: "maskable" },
+          {
+            src: "/icons/icon-maskable.svg",
+            sizes: "any",
+            type: "image/svg+xml",
+            purpose: "maskable",
+          },
         ],
       },
       injectManifest: {

@@ -11,7 +11,10 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Veilleur" />
     <link rel="icon" type="image/svg+xml" href="/icons/icon.svg" />
-    <link rel="apple-touch-icon" href="/icons/icon.svg" />
+    <!-- PNG fallback favicon for browsers that don't take an SVG <link rel="icon">. -->
+    <link rel="icon" type="image/png" sizes="180x180" href="/icons/apple-touch-icon.png" />
+    <!-- iOS home-screen icon: must be a raster PNG, Safari does not accept SVG here. -->
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
     <!-- DESIGN §1 font.display/font.body — same Google Fonts weights as ../veilleur/site
          (Astro) so the PWA and the public site read as one system, not two typefaces. -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />

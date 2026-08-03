@@ -93,9 +93,5 @@ track.
 
 ## Known follow-ups
 
-- **iOS apple-touch icon**: the manifest currently uses a scalable SVG icon
-  (`public/icons/icon.svg`). A raster `apple-touch-icon.png` (180×180) improves the
-  home-screen icon on older iOS; drop one in `public/icons/` and reference it in
-  `index.html` + the manifest.
 - **Performance**: see [`PERF.md`](PERF.md) for the LCP / cached-reload measurement method
   and the Firebase bundle-size note (AC-9).

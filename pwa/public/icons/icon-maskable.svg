@@ -1,0 +1,8 @@
+<!-- Maskable manifest icon (W3C safe-zone: keep content inside the center ~80% circle, since
+     Android/etc. crop this into a circle/squircle/whatever the launcher wants). Full-bleed
+     background, no corner radius — the OS supplies its own mask — and the owl sized down from
+     icon.svg's "any" variant so ears/wingtips survive a circular crop. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="Le Veilleur">
+  <rect width="512" height="512" fill="#0f172a"/>
+  <text x="256" y="320" font-size="270" text-anchor="middle">🦉</text>
+</svg>

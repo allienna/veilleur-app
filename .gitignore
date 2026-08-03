@@ -46,3 +46,6 @@ qa-report.md
 # Local pnpm cache and crash dumps (e.g. from Docker/QEMU debugging)
 .pnpm-store/
 *.core
+
+# Firebase CLI's local deploy-cache state (hosting/firestore cache metadata), not project config.
+.firebase/
