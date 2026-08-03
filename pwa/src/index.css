@@ -9,6 +9,13 @@
   --bg-elevated: #ffffff;
   --bg-inverted: #0f172a;
   --fg-default: #0f172a;
+  /* Article prose tones. The Astro layout does NOT set body copy to the heading colour: it uses
+     `prose-p:text-slate-700` / `prose-li:text-slate-700` for paragraphs and
+     `prose-blockquote:text-slate-600`, keeping slate-900 for headings and `strong`. Collapsing
+     these into `--fg-default` made the reader's text render visibly darker — and darker reads as
+     heavier, which is why it looked like a different font. */
+  --fg-body: #334155;
+  --fg-quote: #475569;
   --fg-muted: #64748b;
   --fg-inverted: #ffffff;
   --border-subtle: #f1f5f9;
@@ -37,6 +44,10 @@
     --bg-elevated: #2b2418;
     --bg-inverted: #0f172a;
     --fg-default: #f5f5f4;
+    /* Mirrors the light ramp: body copy a step softer than headings, the quote a step softer again
+       (the Astro site is light-only, so it has no values to copy here). */
+    --fg-body: #e7e5e4;
+    --fg-quote: #d6d3d1;
     --fg-muted: #a8a29e;
     --fg-inverted: #ffffff;
     --border-subtle: #3a3024;
@@ -64,14 +75,26 @@
   html {
     background-color: var(--bg-default);
     color: var(--fg-default);
+    /* Article footnote markers anchor into the Sources list (inherited from Astro global.css).
+       The prefers-reduced-motion block below neutralises this for anyone who opts out. */
+    scroll-behavior: smooth;
   }
   body {
-    @apply font-body;
+    /* `antialiased` is not cosmetic sugar: the Astro site sets it on both `body` and the body class,
+       and without it macOS/WebKit falls back to subpixel antialiasing, which renders Work Sans and
+       Poppins visibly heavier. Same letterforms, different weight on screen — this is what made the
+       PWA's type look like a different font from the public site. */
+    @apply font-body antialiased;
     margin: 0;
   }
+  /* h1–h6, matching the Astro global.css — not just h1–h3, or a markdown `####` would fall back to
+     the body face. */
   h1,
   h2,
-  h3 {
+  h3,
+  h4,
+  h5,
+  h6 {
     @apply font-display;
   }
   /* :focus-visible ring — DESIGN §5 (inherited from Astro global.css). */
@@ -83,6 +106,9 @@
 
 /* Reduced-motion: disable non-essential transitions (DESIGN §1 Motion / §5). */
 @media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
   *,
   *::before,
   *::after {

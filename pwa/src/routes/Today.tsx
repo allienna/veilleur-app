@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 
 import { ArticleView } from "@/components/ArticleView";
+import { Container } from "@/components/Container";
 import { EmptyState } from "@/components/EmptyState";
 import { ErrorBanner } from "@/components/ErrorBanner";
 import { RunNowButton } from "@/components/RunNowButton";
@@ -23,18 +24,34 @@ export default function Today(): JSX.Element {
   const { run } = useRun(date, noArticle);
   const runInProgress = run?.status === "running";
 
-  if (state.status === "loading") return <SkeletonCard />;
+  // `ArticleView` brings its own width (its hero is full-bleed); the other states need a
+  // `Container`, since `AppShell`'s `main` is unconstrained.
+  if (state.status === "loading")
+    return (
+      <Container>
+        <SkeletonCard />
+      </Container>
+    );
   if (state.status === "error")
-    return <ErrorBanner message="Impossible de charger l'article. Réessayez." />;
+    return (
+      <Container>
+        <ErrorBanner message="Impossible de charger l'article. Réessayez." />
+      </Container>
+    );
   if (!state.data)
     return (
-      <EmptyState
-        title="Pas d'article aujourd'hui"
-        subline="Le run quotidien n'a pas encore produit d'article, ou aucune source n'était disponible."
-        action={
-          <RunNowButton runInProgress={runInProgress} onTriggered={(d) => navigate(`/runs/${d}`)} />
-        }
-      />
+      <Container>
+        <EmptyState
+          title="Pas d'article aujourd'hui"
+          subline="Le run quotidien n'a pas encore produit d'article, ou aucune source n'était disponible."
+          action={
+            <RunNowButton
+              runInProgress={runInProgress}
+              onTriggered={(d) => navigate(`/runs/${d}`)}
+            />
+          }
+        />
+      </Container>
     );
   return <ArticleView article={state.data} />;
 }

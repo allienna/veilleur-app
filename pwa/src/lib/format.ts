@@ -29,6 +29,16 @@ export function formatDateShort(date: string): string {
   return DATE_FMT_SHORT.format(parseDate(date));
 }
 
+// ~200 wpm French reading speed, same ballpark as Astro's remark reading-time plugin.
+const WORDS_PER_MINUTE = 200;
+
+/** "7 min de lecture" from a Markdown body's rough word count. */
+export function estimateReadingTime(body: string): string {
+  const words = body.trim().split(/\s+/).filter(Boolean).length;
+  const minutes = Math.max(1, Math.round(words / WORDS_PER_MINUTE));
+  return `${minutes} min de lecture`;
+}
+
 /** Today in YYYY-MM-DD, Europe/Paris (the article document key). */
 export function todayParis(): string {
   // en-CA yields YYYY-MM-DD; timeZone pins the civil date to Paris.

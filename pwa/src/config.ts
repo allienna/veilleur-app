@@ -4,9 +4,25 @@
 // trigger-api/src/auth.ts; enforced by scripts/check-allowed-email.sh.
 export const ALLOWED_OPERATOR_EMAIL = "aurelien.allienne@gmail.com"; // allowed-email-pin
 
-// Public base for hero images committed to the Astro site by the Minion `github` step
+// Base for hero images committed to `site/public/images/posts` by the Minion `github` step
 // (F-009 Q5). Resolved as `${ASTRO_IMAGES_BASE}/${article.image}`. Non-secret.
-export const ASTRO_IMAGES_BASE = "https://allienna.github.io/veilleur/images/posts";
+//
+// Same-origin, not the public Astro site: the Minion currently publishes articles+images to
+// *this* repo (`GITHUB_REPO_NAME = "veilleur-app"`, constitution AD-4 — the flip to the public
+// `allienna/veilleur` repo is a deliberately deferred post-talk step), so
+// `allienna.github.io/veilleur/images/...` 404s for every image this pipeline generates. The PWA
+// serves its own copy instead, via `pwa/public/images` (a symlink to `../../site/public/images`,
+// the same directory the Minion commits into) — no dependency on which repo ends up live.
+export const ASTRO_IMAGES_BASE = "/images/posts";
+
+// Author byline photo (DESIGN: mirrors ../veilleur/site's ArticleLayout author bar). Same
+// symlinked `pwa/public/images` directory as the hero images, one level up (`images/avatar.jpg`).
+export const AUTHOR_AVATAR_URL = "/images/avatar.jpg";
+
+// Public Astro site (`site`+`base` from ../veilleur/site/astro.config.mjs). The footer's secondary
+// nav targets pages that exist only there (confidentialite, mentions-legales, newsletter, contact,
+// rss.xml) — the PWA has no such routes, so those links leave the app. Non-secret.
+export const PUBLIC_SITE_URL = "https://allienna.github.io/veilleur";
 
 // trigger-api base URL for the manual "Run now" call (F-011 FR-E1). The PWA POSTs
 // `${TRIGGER_API_URL}/trigger` with the operator's Firebase ID token. Non-secret — the real

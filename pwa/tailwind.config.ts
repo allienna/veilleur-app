@@ -16,6 +16,10 @@ const config: Config = {
         },
         fg: {
           DEFAULT: "var(--fg-default)",
+          // Article prose tones — see index.css. `body` is for paragraphs and list items,
+          // `quote` for pull quotes; headings and `strong` stay on `fg.DEFAULT`.
+          body: "var(--fg-body)",
+          quote: "var(--fg-quote)",
           muted: "var(--fg-muted)",
           inverted: "var(--fg-inverted)",
         },
@@ -42,6 +46,11 @@ const config: Config = {
       fontFamily: {
         display: ['"Poppins"', "ui-sans-serif", "system-ui", "sans-serif"],
         body: ['"Work Sans"', "ui-sans-serif", "system-ui", "sans-serif"],
+        // Alias `sans` to the body face, as the Astro config does. Tailwind's preflight sets
+        // `html { font-family: theme(fontFamily.sans) }`, so leaving it at the default put the
+        // system stack (SF Pro on macOS) one inherit away from any element that isn't covered by
+        // `body`, and made a bare `font-sans` silently wrong.
+        sans: ['"Work Sans"', "ui-sans-serif", "system-ui", "sans-serif"],
         mono: ["ui-monospace", "SFMono-Regular", "Menlo", "Consolas", "monospace"],
       },
       fontSize: {
@@ -52,6 +61,17 @@ const config: Config = {
         body: ["16px", { lineHeight: "24px" }],
         caption: ["13px", { lineHeight: "18px", fontWeight: "500" }],
         "mono-sm": ["13px", { lineHeight: "18px" }],
+        // Editorial scale — reader surface only (DESIGN §1 "Editorial scale"), ported 1:1 from
+        // ../veilleur/site's ArticleLayout.astro so an article reads the same on both surfaces.
+        "article-title": ["36px", { lineHeight: "1.1", fontWeight: "900" }],
+        "article-title-lg": ["60px", { lineHeight: "1.1", fontWeight: "900" }],
+        // `1.625` is Astro's `leading-relaxed` on the prose wrapper, which both the lead and body
+        // paragraphs inherit — as a ratio, not a rounded px value.
+        "article-lead": ["20px", { lineHeight: "1.625", fontWeight: "300" }],
+        "article-body": ["18px", { lineHeight: "1.625" }],
+        "article-h2": ["30px", { lineHeight: "36px", fontWeight: "700" }],
+        "article-h3": ["24px", { lineHeight: "32px", fontWeight: "700" }],
+        "article-quote": ["24px", { lineHeight: "32px", fontWeight: "300" }],
       },
       spacing: {
         xs: "4px",
@@ -61,12 +81,14 @@ const config: Config = {
         xl: "32px",
         "2xl": "48px",
         "3xl": "64px",
+        "4xl": "96px", // article card's overlap onto the hero (Astro `-mt-24`)
       },
       borderRadius: {
         sm: "4px",
         md: "8px",
         lg: "12px",
         xl: "16px",
+        "2xl": "24px", // article card top edge (Astro `rounded-t-3xl`)
         full: "9999px",
       },
       transitionDuration: {
@@ -79,7 +101,7 @@ const config: Config = {
         emphasized: "cubic-bezier(0.3, 0, 0, 1.2)",
       },
       maxWidth: {
-        reading: "48rem", // max-w-3xl reading container (DESIGN §3)
+        reading: "800px", // article column, same as the Astro site's `max-w-[800px]` (DESIGN §3)
       },
     },
   },

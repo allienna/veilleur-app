@@ -15,7 +15,10 @@ export function SignInScreen({
         <CardContent className="flex flex-col items-center gap-lg text-center">
           <span aria-hidden className="size-16 rounded-full border-2 border-primary" />
           <div className="space-y-xs">
-            <h1 className="text-h1 font-display text-fg">Le Veilleur</h1>
+            {/* `translate="no"`: a proper noun — see AppHeader. */}
+            <h1 translate="no" className="text-h1 font-display text-fg">
+              Le Veilleur
+            </h1>
             <p className="text-body text-fg-muted">Votre veille tech quotidienne.</p>
           </div>
           <Button onClick={onSignIn} className="w-full">

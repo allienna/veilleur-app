@@ -25,8 +25,10 @@
 | `color.bg.default` | `#f8f7f5` (background-light) | `#221c10` (background-dark) | Page background |
 | `color.bg.elevated` | `#ffffff` | `#2b2418` | Card / sheet surface |
 | `color.bg.inverted` | `#0f172a` (slate-900) | `#0f172a` | Header + footer chrome |
-| `color.fg.default` | `#0f172a` (slate-900) | `#f5f5f4` (stone-100) | Primary text |
-| `color.fg.muted` | `#64748b` (slate-500) | `#a8a29e` (stone-400) | Metadata, timestamps |
+| `color.fg.default` | `#0f172a` (slate-900) | `#f5f5f4` (stone-100) | Primary text, headings, `strong` |
+| `color.fg.body` | `#334155` (slate-700) | `#e7e5e4` (stone-200) | Article paragraphs and list items |
+| `color.fg.quote` | `#475569` (slate-600) | `#d6d3d1` (stone-300) | Article pull quotes |
+| `color.fg.muted` | `#64748b` (slate-500) | `#a8a29e` (stone-400) | Metadata, timestamps, lead paragraph |
 | `color.fg.inverted` | `#ffffff` | `#ffffff` | Text on inverted chrome |
 | `color.border.subtle` | `#f1f5f9` (slate-100) | `#3a3024` | Card borders |
 | `color.border.strong` | `#cbd5e1` (slate-300) | `#57534e` (stone-600) | Input borders |
@@ -69,6 +71,14 @@ PWA-only. Maps to PRD §6 status verbs. Used in `Badge`, `StatusPill`, run timel
 
 Both web fonts come from Google Fonts (preconnected). Weights actually used: Poppins 400/500/600/700/900 (+700/900 italic); Work Sans 300/400/500/600/700 (+300/400 italic). All other weights are forbidden — keep the font payload identical to the Astro site.
 
+**Rendering baseline** — three rules that decide whether the type *looks* like the Astro site, independent of any size or weight token. All three were missing once and made the PWA read as a different typeface:
+
+- **`body` must be `antialiased`** (`-webkit-font-smoothing: antialiased`, `-moz-osx-font-smoothing: grayscale`). The Astro site sets it on both `body` and the body class. Without it macOS/WebKit uses subpixel antialiasing, which renders Work Sans and Poppins visibly heavier.
+- **`font.display` applies to `h1`–`h6`**, not just `h1`–`h3` — otherwise a markdown `####` silently falls back to the body face.
+- **`font.sans` is aliased to the body face.** Tailwind's preflight emits `html { font-family: theme(fontFamily.sans) }`, so leaving it at the default parks the system stack (SF Pro on macOS) one inherit away from anything `body` doesn't cover, and makes a bare `font-sans` silently wrong.
+
+Guarded by tests in `pwa/src/components/components.test.tsx` (`describe("base stylesheet")`), since Tailwind is not applied in jsdom and no component test can observe them.
+
 **Type scale** (base 16px, ratio 1.25, mobile-first):
 
 | Token | Size / line-height | Use |
@@ -84,6 +94,47 @@ Both web fonts come from Google Fonts (preconnected). Weights actually used: Pop
 
 Headings use `font.display` (matches Astro `global.css`). Body and chrome use `font.body`. Run-state numeric values use `font.mono` so durations don't shift width while updating live.
 
+**Editorial scale** — the reader surface only (`ArticleView`). The scale above stays as-is for
+chrome and supervision; article prose is deliberately larger, ported 1:1 from the Astro site's
+`ArticleLayout.astro` so a published article reads identically on both surfaces.
+
+| Token | Size / line-height | Astro equivalent | Use |
+|---|---|---|---|
+| `text.article-title` | 36 / 1.1 (Poppins 900) | `text-4xl font-black leading-[1.1]` | Article `h1`, mobile |
+| `text.article-title-lg` | 60 / 1.1 (Poppins 900) | `md:text-6xl` | Article `h1`, `md` and up |
+| `text.article-lead` | 20 / 32 (Work Sans 300 italic) | `.article-intro>p:first-child` | Lead paragraph |
+| `text.article-body` | 18 / 29 (Work Sans 400) | `text-lg leading-relaxed` | Article prose |
+| `text.article-h2` | 30 / 36 (Poppins 700) | `prose-h2:text-3xl` | Article section heading |
+| `text.article-h3` | 24 / 32 (Poppins 700) | `prose-h3:text-2xl` | Article sub-heading |
+| `text.article-quote` | 24 / 32 (Work Sans 300) | `prose-blockquote:text-2xl font-light` | Pull quote |
+
+Tailwind `fontSize` is not responsive, hence the two title tokens: the article `h1` is written
+`text-article-title md:text-article-title-lg` rather than with an arbitrary value.
+
+**Small text on the reader and listing surfaces uses Tailwind's raw scale, not `text.caption`.**
+The Astro article is built on `text-xs` (12/16) and `text-sm` (14/20) at weight 400 for metadata,
+pills and captions; `text.caption` is 13/18 at weight 500, which is close enough to look like a
+mistake and far enough to read as a different typeface. So:
+
+| Use | Class | Not |
+|---|---|---|
+| Byline meta, disclaimer, link descriptions, card date, nav, footer | `text-sm` | `text.caption` |
+| Tag pills, kind badges, footnote markers, source domains | `text-xs` | `text.caption` |
+| Body links | `font-medium` (weight 500 — `prose` sets this; hand-rolled renderers must restate it) | inherited 400 |
+
+`text.caption` stays the token for supervision chrome (status pills, run metadata), where there is
+no Astro counterpart to match.
+
+**Reader prose tones.** The Astro layout does not paint body copy with the heading colour, and
+collapsing them makes the reader look heavier — darker text reads as a bolder face:
+
+| Element | Token | Astro |
+|---|---|---|
+| Paragraphs, list items | `color.fg.body` (#334155) | `prose-p:text-slate-700`, `prose-li:text-slate-700` |
+| Pull quotes | `color.fg.quote` (#475569) | `prose-blockquote:text-slate-600` |
+| Headings, `strong` | `color.fg.DEFAULT` (#0f172a) | `prose-headings:text-slate-900`, `prose-strong:text-slate-900` |
+| Lead paragraph | `color.fg.muted` (#64748b) | `.article-intro>p:first-child` |
+
 ### Spacing — 4px base
 
 | Token | Value | Token | Value |
@@ -92,6 +143,10 @@ Headings use `font.display` (matches Astro `global.css`). Body and chrome use `f
 | `space.xs` | 4px | `space.xl` | 32px |
 | `space.sm` | 8px | `space.2xl` | 48px |
 | `space.md` | 16px | `space.3xl` | 64px |
+| | | `space.4xl` | 96px |
+
+`space.4xl` exists for one thing: the article card's overlap onto the hero image
+(Astro `-mt-24`, see `radius.2xl`).
 
 ### Radius
 
@@ -101,6 +156,7 @@ Headings use `font.display` (matches Astro `global.css`). Body and chrome use `f
 | `radius.md` | 8px | Buttons, inputs |
 | `radius.lg` | 12px | Cards |
 | `radius.xl` | 16px | Hero image, sheet top edge |
+| `radius.2xl` | 24px | Article card top edge, overlapping the hero (Astro `rounded-t-3xl`) |
 | `radius.full` | 9999px | Mascot circle, status dot, avatar |
 
 ### Shadow
@@ -151,15 +207,17 @@ Dark mode: same values but `rgb(0 0 0 / 0.40)` opacity.
 | `ShareSheet` | iOS bottom sheet with "Copier le post" + "Enregistrer l'image" actions | open, copying, copied, saving, saved, error | `Sheet` |
 | `RunNowButton` | Primary trigger CTA on Today view | idle, loading, disabled (run in progress), error | `Button` |
 
-### Standard (13)
+### Standard (15)
 
 | Component | Purpose | Shadcn base |
 |---|---|---|
 | `Button` | All click/tap affordances (`primary`, `secondary`, `ghost`, `destructive`) | `Button` |
-| `TagPill` | Theme tag on article cards (mirrors Astro `TagPill.astro`) | custom on `Badge` |
-| `AppHeader` | Sticky top chrome: mascot, "Le Veilleur", nav (Aujourd'hui / Historique / Supervision) | custom |
-| `AppShell` | Outer layout (header + main + safe-area paddings) | custom |
-| `ArticleView` | Full article reader (prose-veilleur tokens, hero image, share footer) | `ScrollArea` + custom |
+| `TagPill` | Theme tag on article cards (mirrors Astro `TagPill.astro`) | custom (bare `span`) |
+| `AppHeader` | Sticky top chrome (`z-50`): mascot, "Le Veilleur", nav (Aujourd'hui / Articles / Supervision) | custom |
+| `AppFooter` | Bottom chrome: mascot + wordmark, secondary nav and RSS pointing at the public Astro site; carries the bottom safe-area inset | custom |
+| `AppShell` | Outer layout (header + unconstrained `main` + footer, flex column) | custom |
+| `Container` | Per-route width + padding (`reading` / `listing` / `supervision`) — see §3 | custom |
+| `ArticleView` | Full article reader (`text.article-*` scale, hero image, Sources + share footer) | custom `react-markdown` renderers |
 | `SkeletonCard` | Article card placeholder during Firestore fetch | `Skeleton` |
 | `EmptyState` | "Pas d'article aujourd'hui" / "Aucun run" surface | custom |
 | `ErrorBanner` | Top-of-view error strip with action affordance | custom on `Alert` |
@@ -185,9 +243,19 @@ These tempt but are not in the inventory; their absence is intentional:
 - **Viewports**: iPhone 12-mini (375px) → iPhone 15 Pro Max (430px) → iPad portrait (768px) → Mac Safari (≤1280px container).
 - **Primary persona**: Aurélien (operator).
 - **Density**: `regular` for `/` (Today reading), `compact` for `/history` and `/runs/[id]` (supervision).
-- **Navigation**: top sticky `AppHeader` with three nav targets — `Aujourd'hui`, `Historique`, `Supervision`. No bottom tab bar (preserves visual lineage with the Astro site's header-only chrome).
-- **Container**: `max-w-3xl mx-auto px-4 sm:px-6` for reading. Supervision views allow `max-w-5xl`.
-- **Safe area**: respect `env(safe-area-inset-top/bottom)` on the AppHeader and any `Sheet` so the home-screen-installed PWA sits flush under the iOS notch and above the home indicator.
+- **Navigation**: top sticky `AppHeader` (`z-50`) with three nav targets — `Aujourd'hui`, `Articles`, `Supervision`. No bottom tab bar (preserves visual lineage with the Astro site's header-only chrome). Closed by `AppFooter`, a replica of the Astro site's footer.
+- **Container**: **`main` is unconstrained** (`flex-1 w-full`, no padding) — exactly as the Astro `BaseLayout`. Each route picks its width through the `Container` component, because a single cap on `main` makes both a full-viewport hero and a 1152px grid impossible:
+
+  | `Container` width | Value | Astro equivalent | Use |
+  |---|---|---|---|
+  | `reading` | `max-w-reading` = 800px | `max-w-[800px]` | Article column, single-column states |
+  | `listing` | `max-w-6xl` = 1152px | `max-w-6xl` | Article grid |
+  | `supervision` | `max-w-5xl` = 1024px | — | Run timeline, run history |
+  | *(chrome)* | `max-w-7xl` = 1280px | `max-w-7xl` | `AppHeader` / `AppFooter` inner bars |
+
+  Full-bleed elements (article hero, featured listing entry) sit **outside** any `Container` and use `w-full`.
+- **Brand name**: the wordmark carries `translate="no"` wherever it appears — browser auto-translation renders "Le Veilleur" as "The Watchman".
+- **Safe area**: respect `env(safe-area-inset-top)` on the AppHeader and `env(safe-area-inset-bottom)` on the AppFooter (and any `Sheet`) so the home-screen-installed PWA sits flush under the iOS notch and above the home indicator.
 
 #### Breakpoints
 

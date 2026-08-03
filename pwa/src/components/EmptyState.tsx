@@ -13,12 +13,14 @@ export function EmptyState({
 }): JSX.Element {
   return (
     <div className="flex flex-col items-center gap-md py-3xl text-center">
-      <div
-        aria-hidden
-        className="size-16 rounded-full border-2 border-primary opacity-30"
-      />
-      <p className="text-h3 font-display text-fg">{title}</p>
-      {subline ? <p className="max-w-reading text-body text-fg-muted">{subline}</p> : null}
+      {/* The owl mascot, as on the Astro site's empty listing — at DESIGN §4's 30% opacity. */}
+      <p aria-hidden className="text-6xl opacity-30">
+        🦉
+      </p>
+      {/* Work Sans, not `font.display`: the Astro empty state is a plain `p` (`text-xl
+          font-semibold`), and only headings take the display face. */}
+      <p className="text-xl font-semibold text-fg">{title}</p>
+      {subline ? <p className="max-w-reading text-sm text-fg-muted">{subline}</p> : null}
       {action}
     </div>
   );
