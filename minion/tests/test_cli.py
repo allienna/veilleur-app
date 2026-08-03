@@ -7,6 +7,8 @@ from click.testing import CliRunner
 from minion import cli as cli_mod
 from minion.cli import cli
 from minion.clock import Clock
+from minion.fiches.fakes import FakeFicheGenerateRunner
+from minion.fiches.ports import FicheGenerateRunner
 from minion.generate.fakes import FakeGenerateRunner
 from minion.generate.ports import GenerateRunner
 from minion.ingest.fakes import FakeGmailClient, FakeScraperClient
@@ -18,8 +20,13 @@ from minion.publish.fakes import (
     FakePromptRewriter,
 )
 from minion.publish.ports import ContentRepository, ImageGenerator, PromptRewriter
-from minion.store.memory import InMemoryArticleStore, InMemoryLockStore, InMemoryRunStore
-from minion.store.ports import ArticleStore
+from minion.store.memory import (
+    InMemoryArticleStore,
+    InMemoryFicheStore,
+    InMemoryLockStore,
+    InMemoryRunStore,
+)
+from minion.store.ports import ArticleStore, FicheStore
 
 
 def test_calendar_invalid_date_exits_nonzero() -> None:
@@ -66,8 +73,13 @@ def test_wired_run_exits_zero(monkeypatch) -> None:  # type: ignore[no-untyped-d
 
     def fake_build(
         client: object, clock: Clock
-    ) -> tuple[InMemoryRunStore, InMemoryLockStore, ArticleStore]:
-        return InMemoryRunStore(), InMemoryLockStore(clock), InMemoryArticleStore()
+    ) -> tuple[InMemoryRunStore, InMemoryLockStore, ArticleStore, FicheStore]:
+        return (
+            InMemoryRunStore(),
+            InMemoryLockStore(clock),
+            InMemoryArticleStore(),
+            InMemoryFicheStore(),
+        )
 
     def fake_clients() -> tuple[
         GmailClient,
@@ -76,8 +88,9 @@ def test_wired_run_exits_zero(monkeypatch) -> None:  # type: ignore[no-untyped-d
         ImageGenerator,
         PromptRewriter,
         ContentRepository,
+        FicheGenerateRunner,
     ]:
-        # Empty mailbox → run skips at validate_input, before generate/imagen/github/publish.
+        # Empty mailbox → run skips at validate_input, before generate/imagen/github/publish/fiches.
         return (
             FakeGmailClient(),
             FakeScraperClient(),
@@ -85,6 +98,7 @@ def test_wired_run_exits_zero(monkeypatch) -> None:  # type: ignore[no-untyped-d
             FakeImageGenerator(),
             FakePromptRewriter(),
             FakeContentRepository(),
+            FakeFicheGenerateRunner(),
         )
 
     class _NoopNotifier:

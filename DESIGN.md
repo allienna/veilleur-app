@@ -207,7 +207,7 @@ Dark mode: same values but `rgb(0 0 0 / 0.40)` opacity.
 | `ShareSheet` | iOS bottom sheet with "Copier le post" + "Enregistrer l'image" actions | open, copying, copied, saving, saved, error | `Sheet` |
 | `RunNowButton` | Primary trigger CTA on Today view | idle, loading, disabled (run in progress), error | `Button` |
 
-### Standard (15)
+### Standard (17)
 
 | Component | Purpose | Shadcn base |
 |---|---|---|
@@ -226,6 +226,8 @@ Dark mode: same values but `rgb(0 0 0 / 0.40)` opacity.
 | `SignInScreen` | Google sign-in landing (gates the PWA) | `Card` + `Button` |
 | `UnauthorizedScreen` | "Non autorisé" terminal screen for non-allowed emails | `Card` |
 | `NotificationOptIn` | Push-notification enable/disable control: requests permission, subscribes, reflects state (F-012). On iOS surfaces the home-screen-install prerequisite. | `Button` (+ `Toast`) |
+| `FicheCard` | Per-source-analysis tile in the `/fiches` grid (mirrors Astro `FicheCard.astro`) | custom |
+| `FicheView` | Full fiche reader: breadcrumb, source/translate links, metadata `<dl>`, Résumé/Analyse/Points clés (mirrors Astro `FicheLayout.astro`) | custom `react-markdown` renderers |
 
 ### Forbidden
 
@@ -248,8 +250,8 @@ These tempt but are not in the inventory; their absence is intentional:
 
   | `Container` width | Value | Astro equivalent | Use |
   |---|---|---|---|
-  | `reading` | `max-w-reading` = 800px | `max-w-[800px]` | Article column, single-column states |
-  | `listing` | `max-w-6xl` = 1152px | `max-w-6xl` | Article grid |
+  | `reading` | `max-w-reading` = 800px | `max-w-[800px]` | Article column, `/fiches/:slug`, single-column states |
+  | `listing` | `max-w-6xl` = 1152px | `max-w-6xl` | Article grid, `/fiches` grid |
   | `supervision` | `max-w-5xl` = 1024px | — | Run timeline, run history |
   | *(chrome)* | `max-w-7xl` = 1280px | `max-w-7xl` | `AppHeader` / `AppFooter` inner bars |
 

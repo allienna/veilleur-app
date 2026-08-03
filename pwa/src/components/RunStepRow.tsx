@@ -5,7 +5,7 @@ import { useNow } from "@/lib/useNow";
 import { STATUS_DOT } from "@/lib/runStatus";
 import { cn } from "@/lib/utils";
 
-// Human labels for the nine pipeline steps (DESIGN §3 supervision; fr-FR per §5).
+// Human labels for the ten pipeline steps (DESIGN §3 supervision; fr-FR per §5).
 const STEP_LABEL: Record<StepName, string> = {
   gmail: "Gmail",
   jina: "Extraction (Jina)",
@@ -16,6 +16,7 @@ const STEP_LABEL: Record<StepName, string> = {
   imagen: "Image (Imagen)",
   github: "Publication GitHub",
   publish: "Mise en ligne",
+  fiches: "Fiches sources",
 };
 
 // `RunStepRow` — one timeline row: step name + status dot + duration (DESIGN §2). A step absent

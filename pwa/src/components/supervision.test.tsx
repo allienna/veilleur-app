@@ -69,9 +69,9 @@ describe("RunStepRow", () => {
 });
 
 describe("RunTimeline", () => {
-  it("renders all nine steps in canonical order with the run status", () => {
+  it("renders all ten steps in canonical order with the run status", () => {
     render(<RunTimeline run={makeRun({ status: "running", steps: [makeStep({ name: "gmail" })] })} />);
-    expect(screen.getAllByRole("listitem")).toHaveLength(9);
+    expect(screen.getAllByRole("listitem")).toHaveLength(10);
     expect(screen.getByText("Gmail")).toBeInTheDocument();
     expect(screen.getByText("Mise en ligne")).toBeInTheDocument();
     expect(screen.getByText("en cours")).toBeInTheDocument();

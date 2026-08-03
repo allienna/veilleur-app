@@ -17,6 +17,7 @@ if TYPE_CHECKING:
     from google.cloud import firestore
 
 from minion.clock import Clock, SystemClock
+from minion.fiches.ports import FicheGenerateRunner
 from minion.generate.ports import GenerateRunner
 from minion.ingest.ports import GmailClient, ScraperClient
 from minion.logging import configure_logging
@@ -25,7 +26,7 @@ from minion.notify import Notifier
 from minion.orchestrator import run_pipeline
 from minion.publish.ports import ContentRepository, ImageGenerator, PromptRewriter
 from minion.steps import build_pipeline
-from minion.store.ports import ArticleStore, LockStore, RunStore
+from minion.store.ports import ArticleStore, FicheStore, LockStore, RunStore
 
 _DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
@@ -53,10 +54,11 @@ def build_firestore_client() -> firestore.Client:
 
 def build_stores(
     client: firestore.Client, clock: Clock
-) -> tuple[RunStore, LockStore, ArticleStore]:
+) -> tuple[RunStore, LockStore, ArticleStore, FicheStore]:
     """Construct the production Firestore-backed stores over `client`."""
     from minion.store.firestore import (
         FirestoreArticleStore,
+        FirestoreFicheStore,
         FirestoreLockStore,
         FirestoreRunStore,
     )
@@ -65,6 +67,7 @@ def build_stores(
         FirestoreRunStore(client),
         FirestoreLockStore(client, clock),
         FirestoreArticleStore(client),
+        FirestoreFicheStore(client),
     )
 
 
@@ -97,9 +100,16 @@ def build_notifier(client: firestore.Client) -> Notifier | None:
 
 
 def build_clients() -> tuple[
-    GmailClient, ScraperClient, GenerateRunner, ImageGenerator, PromptRewriter, ContentRepository
+    GmailClient,
+    ScraperClient,
+    GenerateRunner,
+    ImageGenerator,
+    PromptRewriter,
+    ContentRepository,
+    FicheGenerateRunner,
 ]:
     """Construct the production ingestion / generation / publishing clients (lazy — needs creds)."""
+    from minion.fiches.runner import ClaudeFicheGenerateRunner
     from minion.generate.runner import ClaudeGenerateRunner
     from minion.ingest.gmail import GmailReaderClient
     from minion.ingest.scraper import LocalExtractorClient
@@ -113,6 +123,7 @@ def build_clients() -> tuple[
         VertexImageGenerator(),
         ClaudePromptRewriter(),
         GitHubContentRepository(),
+        ClaudeFicheGenerateRunner(),
     )
 
 
@@ -134,7 +145,7 @@ def run(date: str | None) -> None:
     clock = SystemClock()
     target = date or clock.now().strftime("%Y-%m-%d")
     client = build_firestore_client()
-    run_store, lock_store, article_store = build_stores(client, clock)
+    run_store, lock_store, article_store, fiche_store = build_stores(client, clock)
     (
         gmail_client,
         scraper_client,
@@ -142,6 +153,7 @@ def run(date: str | None) -> None:
         image_generator,
         prompt_rewriter,
         content_repo,
+        fiche_runner,
     ) = build_clients()
     steps = build_pipeline(
         gmail_client,
@@ -151,6 +163,8 @@ def run(date: str | None) -> None:
         prompt_rewriter,
         content_repo,
         article_store,
+        fiche_runner,
+        fiche_store,
     )
     notifier = build_notifier(client)
     result = run_pipeline(

@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://veilleur.app/schema/fiche.json",
+  "title": "Fiche",
+  "description": "Per-source analysis persisted to Firestore `fiches/{slug}` (the document key is `slug`, derived from the source title). Written server-side by the Minion `fiches` step, one per source cited in a published article's `## Sources` section. Read by the PWA fiches surface (behind the article's \"Consulter toutes les analyses de cet article\" CTA). Field names are snake_case to match the persisted document.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["slug", "url", "title", "theme", "keywords", "used_in", "body", "created_at"],
+  "properties": {
+    "slug": {
+      "type": "string",
+      "description": "URL slug derived from the source title. Firestore document key."
+    },
+    "url": {
+      "type": "string",
+      "description": "The analyzed source's original URL."
+    },
+    "title": {
+      "type": "string",
+      "description": "The source's title."
+    },
+    "theme": {
+      "type": "string",
+      "description": "The fiche's tech-watch theme; rendered as a TagPill in the PWA."
+    },
+    "keywords": {
+      "type": "array",
+      "description": "Free-text keywords for this source.",
+      "items": { "type": "string" }
+    },
+    "tone": {
+      "type": ["string", "null"],
+      "description": "The source's tone (e.g. opinion, tutorial, research, news), if identifiable.",
+      "default": null
+    },
+    "used_in": {
+      "type": "array",
+      "description": "Publication dates (YYYY-MM-DD) of every article that cited this source. Grows via array-union on re-citation: a source analyzed once keeps its most recent analysis but accumulates every date it was cited on.",
+      "items": { "type": "string" }
+    },
+    "body": {
+      "type": "string",
+      "description": "Fiche body (Markdown): `## Résumé`, `## Points clés`, `## Analyse approfondie`, `## Pourquoi ça compte` sections, in that order."
+    },
+    "created_at": {
+      "type": "string",
+      "description": "ISO 8601 timestamp of the most recent (re)generation of this fiche."
+    }
+  }
+}

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { splitArticleBody } from "@/lib/articleBody";
+import { splitFicheBody } from "@/lib/ficheBody";
 import { formatDateLong, formatDateShort } from "@/lib/format";
 import { heroUrl } from "@/lib/hero";
 
@@ -99,5 +100,50 @@ describe("splitArticleBody", () => {
   it("leaves the domain empty for an unparseable URL", () => {
     const { sources } = splitArticleBody("## Sources\n\n1. [Cassé](pas-une-url)\n");
     expect(sources[0]?.domain).toBe("");
+  });
+});
+
+describe("splitFicheBody", () => {
+  const BODY = [
+    "## Résumé",
+    "",
+    "Un résumé sur deux lignes.",
+    "Suite du résumé.",
+    "",
+    "## Points clés",
+    "",
+    "- Premier point.",
+    "- Deuxième point.",
+    "",
+    "## Analyse approfondie",
+    "",
+    "Une analyse plus longue.",
+    "",
+    "## Pourquoi ça compte",
+    "",
+    "Parce que oui.",
+  ].join("\n");
+
+  it("extracts all four sections in order", () => {
+    const { summary, keyPoints, analysis, whyItMatters } = splitFicheBody(BODY);
+    expect(summary).toBe("Un résumé sur deux lignes.\nSuite du résumé.");
+    expect(keyPoints).toEqual(["Premier point.", "Deuxième point."]);
+    expect(analysis).toBe("Une analyse plus longue.");
+    expect(whyItMatters).toBe("Parce que oui.");
+  });
+
+  it("tolerates a single newline after the heading (no blank line)", () => {
+    const tight = "## Résumé\nUn résumé compact.\n\n## Points clés\n- Un point.";
+    const { summary, keyPoints } = splitFicheBody(tight);
+    expect(summary).toBe("Un résumé compact.");
+    expect(keyPoints).toEqual(["Un point."]);
+  });
+
+  it("returns empty values when a section is absent", () => {
+    const { summary, keyPoints, analysis, whyItMatters } = splitFicheBody("## Résumé\n\nSeul.");
+    expect(summary).toBe("Seul.");
+    expect(keyPoints).toEqual([]);
+    expect(analysis).toBe("");
+    expect(whyItMatters).toBe("");
   });
 });

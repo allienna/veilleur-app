@@ -48,7 +48,7 @@ describe("assembleRun", () => {
   it("omits not-yet-started steps (timeline fills the gaps as pending)", () => {
     const run = assembleRun("2026-06-01", runDoc, [stepDoc("gmail")]);
     expect(run?.steps).toHaveLength(1);
-    expect(STEP_ORDER).toHaveLength(9);
+    expect(STEP_ORDER).toHaveLength(10);
   });
 
   it("returns null when the run document is absent", () => {

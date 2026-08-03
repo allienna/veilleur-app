@@ -29,6 +29,7 @@ class StepName(Enum):
     imagen = "imagen"
     github = "github"
     publish = "publish"
+    fiches = "fiches"
 
 
 class RunStep(BaseModel):

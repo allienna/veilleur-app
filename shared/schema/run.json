@@ -51,7 +51,7 @@
     "StepName": {
       "type": "string",
       "title": "StepName",
-      "description": "The nine canonical Minion pipeline steps, in execution order.",
+      "description": "The ten canonical Minion pipeline steps, in execution order.",
       "enum": [
         "gmail",
         "jina",
@@ -61,7 +61,8 @@
         "validate_output",
         "imagen",
         "github",
-        "publish"
+        "publish",
+        "fiches"
       ]
     },
     "RunStep": {

@@ -17,8 +17,8 @@ import { db } from "@/firebase";
 const RUNS = "runs";
 const STEPS = "steps";
 
-// The nine canonical pipeline steps in execution order (mirrors the Minion's StepName enum and
-// `STEP_ORDER`). The timeline always renders all nine; steps absent from the subcollection are
+// The ten canonical pipeline steps in execution order (mirrors the Minion's StepName enum and
+// `STEP_ORDER`). The timeline always renders all ten; steps absent from the subcollection are
 // pending. Kept as a literal here so the order is explicit and independent of object iteration.
 export const STEP_ORDER: readonly StepName[] = [
   "gmail",
@@ -30,6 +30,7 @@ export const STEP_ORDER: readonly StepName[] = [
   "imagen",
   "github",
   "publish",
+  "fiches",
 ];
 
 /**

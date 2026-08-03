@@ -27,6 +27,10 @@ beforeAll(async () => {
   // privileged writes).
   await env.withSecurityRulesDisabled(async (ctx) => {
     await setDoc(doc(ctx.firestore(), "articles", "2026-06-01"), { date: "2026-06-01" });
+    await setDoc(doc(ctx.firestore(), "fiches", "some-source"), {
+      slug: "some-source",
+      used_in: ["2026-06-01"],
+    });
     await setDoc(doc(ctx.firestore(), "runs", "2026-06-01"), {
       runId: "01J0",
       date: "2026-06-01",
@@ -91,6 +95,25 @@ describe("firestore.rules — articles", () => {
   it("denies reads on other collections (deny-by-default)", async () => {
     const db = ctxFor(ALLOWED_OPERATOR_EMAIL, true).firestore();
     await assertFails(getDoc(doc(db, "locks", "minion")));
+  });
+});
+
+// F-016: `fiches/{slug}` is readable by the allowed, verified operator (the reader surface behind
+// an article's "Consulter toutes les analyses de cet article" CTA) and never client-writable.
+describe("firestore.rules — fiches", () => {
+  it("allows the allowed, verified operator to read", async () => {
+    const db = ctxFor(ALLOWED_OPERATOR_EMAIL, true).firestore();
+    await assertSucceeds(getDoc(doc(db, "fiches", "some-source")));
+  });
+
+  it("denies a non-allowed email", async () => {
+    const db = ctxFor("intruder@example.com", true).firestore();
+    await assertFails(getDoc(doc(db, "fiches", "some-source")));
+  });
+
+  it("denies client writes even for the allowed operator", async () => {
+    const db = ctxFor(ALLOWED_OPERATOR_EMAIL, true).firestore();
+    await assertFails(setDoc(doc(db, "fiches", "another-source"), { slug: "another-source" }));
   });
 });
 

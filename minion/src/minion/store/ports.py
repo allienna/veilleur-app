@@ -6,6 +6,7 @@ Firestore layout (AD-1, AD-2):
     runs/{date}/steps/{stepName}    one observable child per step (constitution §2.9)
     locks/{minion}                  the single global concurrency lock
     articles/{date}                 the published article the PWA reads (F-006)
+    fiches/{slug}                   per-source analysis, keyed by source-title slug (F-016)
 
 The schema's `Run.steps` array is the *assembled* view: `get_run` merges the run-level
 document with its step subcollection into a schema-valid `Run` (AC-2). Replaying a date
@@ -20,6 +21,7 @@ from typing import Protocol
 
 from veilleur_shared.push_subscription import PushSubscription
 
+from minion.fiches.models import FicheDoc
 from minion.models import Lock, Run, RunStatus, RunStep
 from minion.publish.models import ArticleDoc
 
@@ -86,6 +88,21 @@ class ArticleStore(Protocol):
 
     def get_article(self, date: str) -> ArticleDoc | None:
         """Return the article persisted for `date`, or None."""
+        ...
+
+
+class FicheStore(Protocol):
+    """Reads and writes per-source analysis documents (F-016)."""
+
+    def put_fiche(self, slug: str, fiche: FicheDoc) -> None:
+        """Upsert `fiches/{slug}`: `fiche.used_in` is *merged* (array-union) into any existing
+        document rather than overwritten, so a source cited again on a later date keeps every
+        date it was cited on. Every other field takes `fiche`'s value — the freshest analysis
+        of a source replaces the previous one."""
+        ...
+
+    def get_fiche(self, slug: str) -> FicheDoc | None:
+        """Return the fiche persisted for `slug`, or None."""
         ...
 
 

@@ -1,7 +1,7 @@
 """The run state machine.
 
 `run_pipeline` mints a per-attempt ULID, takes the global lock (aborting if another run
-holds it), writes the `running` run document, drives the nine steps writing per-step
+holds it), writes the `running` run document, drives the ten steps writing per-step
 observable children, finalizes the run, and releases the lock — on success or failure.
 
 Invariants enforced here (constitution §2.7-§2.9):

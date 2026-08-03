@@ -8,7 +8,8 @@
     "./run-status": "./generated/ts/run-status.ts",
     "./run": "./generated/ts/run.ts",
     "./article": "./generated/ts/article.ts",
-    "./push-subscription": "./generated/ts/push-subscription.ts"
+    "./push-subscription": "./generated/ts/push-subscription.ts",
+    "./fiche": "./generated/ts/fiche.ts"
   },
   "scripts": {
     "gen:ts": "node scripts/gen-ts.mjs",

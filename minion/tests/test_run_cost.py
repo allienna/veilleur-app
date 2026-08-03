@@ -11,6 +11,7 @@ from datetime import datetime
 from typing import Any
 
 from minion.config import PARIS_TZ
+from minion.fiches.fakes import FakeFicheGenerateRunner
 from minion.generate.fakes import FakeGenerateRunner
 from minion.ingest.fakes import FakeGmailClient, FakeScraperClient
 from minion.ingest.models import Newsletter
@@ -18,7 +19,7 @@ from minion.models import Run, RunStatus
 from minion.orchestrator import run_pipeline
 from minion.publish.fakes import FakeContentRepository, FakeImageGenerator, FakePromptRewriter
 from minion.steps import build_pipeline
-from minion.store.memory import InMemoryArticleStore
+from minion.store.memory import InMemoryArticleStore, InMemoryFicheStore
 
 DATE = "2026-06-01"
 T0 = datetime(2026, 6, 1, 6, 0, tzinfo=PARIS_TZ)
@@ -51,6 +52,8 @@ def _run(runner: FakeGenerateRunner, run_store, lock_store, clock, *, newsletter
         FakePromptRewriter(),
         FakeContentRepository(),
         InMemoryArticleStore(),
+        FakeFicheGenerateRunner(),
+        InMemoryFicheStore(),
     )
     return run_pipeline(DATE, run_store=run_store, lock_store=lock_store, clock=clock, steps=steps)
 

@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 
+import type { Article } from "@veilleur/shared/article";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
@@ -12,12 +13,14 @@ import { ArticleCard } from "@/components/ArticleCard";
 import { ArticleView } from "@/components/ArticleView";
 import { EmptyState } from "@/components/EmptyState";
 import { ErrorBanner } from "@/components/ErrorBanner";
+import { FicheCard } from "@/components/FicheCard";
+import { FicheView } from "@/components/FicheView";
 import { RunTimeline } from "@/components/RunTimeline";
 import { SignInScreen } from "@/components/SignInScreen";
 import { TagPill } from "@/components/TagPill";
 import { UnauthorizedScreen } from "@/components/UnauthorizedScreen";
 import { PUBLIC_SITE_URL, REAUTH_RUNBOOK_URL } from "@/config";
-import { makeArticle, makeRun } from "@/test/fixtures";
+import { makeArticle, makeFiche, makeRun } from "@/test/fixtures";
 
 // RunTimeline pulls @/data/runs (→ @/firebase); avoid initializing a real Firebase app in tests.
 vi.mock("@/firebase", () => ({ db: {} }));
@@ -216,31 +219,45 @@ describe("ArticleCard", () => {
   });
 });
 
+// `ArticleView` now links to `/fiches?article=...` (the CTA), so every render needs a Router.
+function renderArticle(article: Article) {
+  return render(
+    <MemoryRouter>
+      <ArticleView article={article} />
+    </MemoryRouter>,
+  );
+}
+
 describe("ArticleView", () => {
   it("renders title and body; keeps the reserved share-footer slot", () => {
-    render(<ArticleView article={makeArticle()} />);
+    renderArticle(makeArticle());
     expect(screen.getByRole("heading", { name: "Un titre d'article" })).toBeInTheDocument();
     expect(screen.getByText("Corps de l'article.")).toBeInTheDocument();
     expect(screen.getByTestId("share-footer-slot")).toBeInTheDocument();
   });
 
+  it("shows the fiches CTA only when the article cites sources", () => {
+    renderArticle(makeArticle()); // no "## Sources" section
+    expect(
+      screen.queryByRole("link", { name: /Consulter toutes les analyses/ }),
+    ).not.toBeInTheDocument();
+  });
+
   it("lifts `## Sources` out of the prose into a Sources list with a footnote anchor", () => {
     const url = "https://blog.example.com/p/x";
-    render(
-      <ArticleView
-        article={makeArticle({
-          body: [
-            "Le chapô.",
-            "",
-            `Un fait sourcé [[1](${url})].`,
-            "",
-            "## Sources",
-            "",
-            `1. [Le titre de la source](${url})`,
-            "",
-          ].join("\n"),
-        })}
-      />,
+    renderArticle(
+      makeArticle({
+        body: [
+          "Le chapô.",
+          "",
+          `Un fait sourcé [[1](${url})].`,
+          "",
+          "## Sources",
+          "",
+          `1. [Le titre de la source](${url})`,
+          "",
+        ].join("\n"),
+      }),
     );
     // The raw list is gone from the prose; only the styled section renders it.
     expect(screen.queryByText(/^1\. \[Le titre/)).not.toBeInTheDocument();
@@ -251,10 +268,8 @@ describe("ArticleView", () => {
   });
 
   it("sizes a blockquote's inner paragraph as a pull quote, not body text", () => {
-    const { container } = render(
-      <ArticleView
-        article={makeArticle({ body: "Le chapô.\n\n> Une citation qui compte.\n" })}
-      />,
+    const { container } = renderArticle(
+      makeArticle({ body: "Le chapô.\n\n> Une citation qui compte.\n" }),
     );
     const quoted = container.querySelector("blockquote p");
     expect(quoted?.textContent).toBe("Une citation qui compte.");
@@ -270,21 +285,19 @@ describe("ArticleView", () => {
   // verified against the compiled Astro CSS; see DESIGN §1 "Editorial scale".
   it("matches the Astro article's small-text scale and link weight", () => {
     const url = "https://blog.example.com/p/x";
-    const { container } = render(
-      <ArticleView
-        article={makeArticle({
-          body: [
-            "Le chapô.",
-            "",
-            `Un [lien externe](https://example.com/a) et un renvoi [[1](${url})].`,
-            "",
-            "## Sources",
-            "",
-            `1. [La source](${url})`,
-            "",
-          ].join("\n"),
-        })}
-      />,
+    const { container } = renderArticle(
+      makeArticle({
+        body: [
+          "Le chapô.",
+          "",
+          `Un [lien externe](https://example.com/a) et un renvoi [[1](${url})].`,
+          "",
+          "## Sources",
+          "",
+          `1. [La source](${url})`,
+          "",
+        ].join("\n"),
+      }),
     );
     expect(screen.getByRole("link", { name: "lien externe" })).toHaveClass("font-medium");
     // The footnote marker is styled as a plain body link, like the Astro one — a padded pill
@@ -294,17 +307,18 @@ describe("ArticleView", () => {
     expect(screen.getByText(/Publié le/)).toHaveClass("text-sm");
     expect(screen.getByText(/rédigé en m'appuyant sur une IA/)).toHaveClass("text-sm");
     expect(container.querySelector("#sources h2")).toHaveClass("text-xl");
+    expect(
+      screen.getByRole("link", { name: "Consulter toutes les analyses de cet article" }),
+    ).toHaveAttribute("href", `/fiches?article=${makeArticle().date}`);
   });
 
   // The Astro layout keeps body copy a step lighter than headings; collapsing both onto the heading
   // colour rendered the reader visibly darker, which reads as a heavier typeface.
   it("keeps body copy on the prose tone, not the heading tone", () => {
-    const { container } = render(
-      <ArticleView
-        article={makeArticle({
-          body: "Le chapô.\n\nUn paragraphe.\n\n## Un titre\n\n> Une citation.\n\n- Un item\n",
-        })}
-      />,
+    const { container } = renderArticle(
+      makeArticle({
+        body: "Le chapô.\n\nUn paragraphe.\n\n## Un titre\n\n> Une citation.\n\n- Un item\n",
+      }),
     );
     const paragraphs = [...container.querySelectorAll("p.text-article-body")];
     expect(paragraphs.length).toBeGreaterThan(0);
@@ -317,13 +331,89 @@ describe("ArticleView", () => {
 
   it("keeps the lead paragraph styled across re-renders", async () => {
     const article = makeArticle({ body: "Le chapô.\n\nLa suite du corps.\n" });
-    const { container } = render(<ArticleView article={article} />);
+    const { container } = renderArticle(article);
     const lead = () => container.querySelector("p.text-article-lead");
     expect(lead()?.textContent).toBe("Le chapô.");
     // The paragraph counter lives in the renderer map; if that map were memoized, this second
     // render pass would leave the lead unstyled.
     await userEvent.click(screen.getByRole("button", { name: /Partager/ }));
     expect(lead()?.textContent).toBe("Le chapô.");
+  });
+});
+
+describe("FicheCard", () => {
+  it("links to the fiche and shows title, theme, and résumé", () => {
+    render(
+      <MemoryRouter>
+        <FicheCard fiche={makeFiche()} />
+      </MemoryRouter>,
+    );
+    expect(screen.getByText("Une source")).toBeInTheDocument();
+    expect(screen.getByText("IA")).toBeInTheDocument();
+    expect(screen.getByText("Un résumé.")).toBeInTheDocument();
+    expect(screen.getAllByRole("link", { name: /Une source|Lire l'analyse/ })[0]).toHaveAttribute(
+      "href",
+      "/fiches/une-source",
+    );
+  });
+
+  it("shows the source domain when the url parses", () => {
+    render(
+      <MemoryRouter>
+        <FicheCard fiche={makeFiche({ url: "https://www.example.com/a" })} />
+      </MemoryRouter>,
+    );
+    expect(screen.getByText("example.com")).toBeInTheDocument();
+  });
+});
+
+describe("FicheView", () => {
+  it("renders the header, metadata, and all four sections", () => {
+    render(
+      <MemoryRouter>
+        <FicheView fiche={makeFiche()} />
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole("heading", { name: "Une source" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Article original/ })).toHaveAttribute(
+      "href",
+      "https://example.com/a",
+    );
+    expect(screen.getByText("Un résumé.")).toBeInTheDocument();
+    expect(screen.getByText("Une analyse.")).toBeInTheDocument();
+    expect(screen.getByText("Parce que.")).toBeInTheDocument();
+    expect(screen.getByText("Un point.")).toBeInTheDocument();
+    // Metadata grid: theme + keywords + tone.
+    expect(screen.getByText("ia, agents")).toBeInTheDocument();
+    expect(screen.getByText("opinion")).toBeInTheDocument();
+  });
+
+  it("shows a breadcrumb back to the citing article when used_in is non-empty", () => {
+    render(
+      <MemoryRouter>
+        <FicheView fiche={makeFiche({ used_in: ["2026-06-01"] })} />
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole("link", { name: /Article du/ })).toHaveAttribute(
+      "href",
+      "/article/2026-06-01",
+    );
+    expect(screen.getByRole("link", { name: "Analyses" })).toHaveAttribute(
+      "href",
+      "/fiches?article=2026-06-01",
+    );
+  });
+
+  it("falls back to a plain link when used_in is empty", () => {
+    render(
+      <MemoryRouter>
+        <FicheView fiche={makeFiche({ used_in: [] })} />
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole("link", { name: /Toutes les analyses/ })).toHaveAttribute(
+      "href",
+      "/fiches",
+    );
   });
 });
 

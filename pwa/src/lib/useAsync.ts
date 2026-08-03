@@ -5,10 +5,17 @@ export type AsyncState<T> =
   | { status: "error"; error: unknown }
   | { status: "ready"; data: T };
 
-/** Run an async loader on mount / when `deps` change, tracking loading/error/ready. */
-export function useAsync<T>(load: () => Promise<T>, deps: readonly unknown[]): AsyncState<T> {
+/** Run an async loader on mount / when `deps` change, tracking loading/error/ready. Pass
+ * `enabled: false` (mirrors `useRun`) to skip calling `load` entirely — e.g. when a required
+ * param is absent — rather than calling it with a placeholder and discarding the result. */
+export function useAsync<T>(
+  load: () => Promise<T>,
+  deps: readonly unknown[],
+  enabled = true,
+): AsyncState<T> {
   const [state, setState] = useState<AsyncState<T>>({ status: "loading" });
   useEffect(() => {
+    if (!enabled) return;
     let live = true;
     setState({ status: "loading" });
     load().then(
@@ -18,6 +25,6 @@ export function useAsync<T>(load: () => Promise<T>, deps: readonly unknown[]): A
     return () => {
       live = false;
     };
-  }, deps);
+  }, [...deps, enabled]);
   return state;
 }

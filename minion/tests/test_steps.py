@@ -6,6 +6,7 @@ from datetime import datetime
 
 from minion.clock import FrozenClock
 from minion.config import PARIS_TZ, STEP_ORDER
+from minion.fiches.fakes import FakeFicheGenerateRunner
 from minion.generate.fakes import FakeGenerateRunner
 from minion.ingest.fakes import FakeGmailClient, FakeScraperClient
 from minion.logging import bind
@@ -16,14 +17,15 @@ from minion.publish.fakes import (
     FakePromptRewriter,
 )
 from minion.steps import STEPS, StepContext, build_pipeline
+from minion.steps.fiches import FichesStep
 from minion.steps.generation import AssembleStep, GenerateStep, ValidateOutputStep
 from minion.steps.ingestion import GmailStep, ScrapeStep, ValidateInputStep
 from minion.steps.publish import GithubStep, ImagenStep, PublishStep
-from minion.store.memory import InMemoryArticleStore
+from minion.store.memory import InMemoryArticleStore, InMemoryFicheStore
 
 
-def test_steps_are_nine_in_canonical_order() -> None:
-    assert len(STEPS) == 9
+def test_steps_are_ten_in_canonical_order() -> None:
+    assert len(STEPS) == 10
     assert tuple(s.name for s in STEPS) == STEP_ORDER
 
 
@@ -60,8 +62,10 @@ def test_build_pipeline_wires_real_steps_and_keeps_order() -> None:
         FakePromptRewriter(),
         FakeContentRepository(),
         InMemoryArticleStore(),
+        FakeFicheGenerateRunner(),
+        InMemoryFicheStore(),
     )
-    assert len(pipeline) == 9
+    assert len(pipeline) == 10
     assert tuple(s.name for s in pipeline) == STEP_ORDER
     by_name = {s.name: s for s in pipeline}
     assert isinstance(by_name[StepName.gmail], GmailStep)
@@ -74,3 +78,4 @@ def test_build_pipeline_wires_real_steps_and_keeps_order() -> None:
     assert isinstance(by_name[StepName.imagen], ImagenStep)
     assert isinstance(by_name[StepName.github], GithubStep)
     assert isinstance(by_name[StepName.publish], PublishStep)
+    assert isinstance(by_name[StepName.fiches], FichesStep)

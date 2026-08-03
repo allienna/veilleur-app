@@ -25,6 +25,14 @@ export const router = createBrowserRouter([
         lazy: async () => ({ Component: (await import("@/routes/Article")).default }),
       },
       {
+        path: "fiches",
+        lazy: async () => ({ Component: (await import("@/routes/Fiches")).default }),
+      },
+      {
+        path: "fiches/:slug",
+        lazy: async () => ({ Component: (await import("@/routes/Fiche")).default }),
+      },
+      {
         path: "supervision",
         lazy: async () => ({ Component: (await import("@/routes/Supervision")).default }),
       },

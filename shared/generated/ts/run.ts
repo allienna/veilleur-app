@@ -9,7 +9,7 @@
  */
 export type RunStatus = "success" | "success_with_warnings" | "failure" | "skipped" | "aborted" | "running";
 /**
- * The nine canonical Minion pipeline steps, in execution order.
+ * The ten canonical Minion pipeline steps, in execution order.
  */
 export type StepName =
   | "gmail"
@@ -20,7 +20,8 @@ export type StepName =
   | "validate_output"
   | "imagen"
   | "github"
-  | "publish";
+  | "publish"
+  | "fiches";
 
 /**
  * Shape of a Minion run document and its per-step children. The run is keyed in Firestore by `date` (the idempotency key); `runId` is a ULID stored as a field, fresh per attempt (F-003 AD-1). Source of truth for Firestore docs (Minion) and the supervision listener (PWA).

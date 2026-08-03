@@ -13,6 +13,7 @@ from veilleur_shared.push_subscription import PushSubscription
 
 from minion.clock import Clock
 from minion.config import RUN_TIMEOUT, STEP_ORDER
+from minion.fiches.models import FicheDoc
 from minion.models import Lock, Run, RunStatus, RunStep, StepName
 from minion.publish.models import ArticleDoc
 from minion.store.ports import StoredSubscription
@@ -84,6 +85,25 @@ class InMemoryArticleStore:
 
     def get_article(self, date: str) -> ArticleDoc | None:
         return self._articles.get(date)
+
+
+class InMemoryFicheStore:
+    """Fiche store backed by a dict, mirroring `FirestoreFicheStore`'s array-union `used_in`
+    semantics: an existing document's `used_in` is unioned with the new one's (order-preserving,
+    de-duplicated), every other field overwritten by the new document."""
+
+    def __init__(self) -> None:
+        self._fiches: dict[str, FicheDoc] = {}
+
+    def put_fiche(self, slug: str, fiche: FicheDoc) -> None:
+        existing = self._fiches.get(slug)
+        if existing is not None:
+            merged_dates = list(dict.fromkeys([*existing.used_in, *fiche.used_in]))
+            fiche = fiche.model_copy(update={"used_in": merged_dates})
+        self._fiches[slug] = fiche
+
+    def get_fiche(self, slug: str) -> FicheDoc | None:
+        return self._fiches.get(slug)
 
 
 class InMemorySubscriptionStore:

@@ -20,6 +20,7 @@ from veilleur_shared.push_subscription import PushSubscription
 from minion.clock import Clock
 from minion.config import (
     ARTICLES_COLLECTION,
+    FICHES_COLLECTION,
     LOCK_DOC_ID,
     LOCKS_COLLECTION,
     PUSH_SUBSCRIPTIONS_COLLECTION,
@@ -28,6 +29,7 @@ from minion.config import (
     STEP_ORDER,
     STEPS_SUBCOLLECTION,
 )
+from minion.fiches.models import FicheDoc
 from minion.models import Lock, Run, RunStatus, RunStep, StepName
 from minion.publish.models import ArticleDoc
 from minion.store.ports import StoredSubscription
@@ -141,6 +143,29 @@ class FirestoreArticleStore:
         if not snapshot.exists:
             return None
         return ArticleDoc.model_validate(cast("dict[str, Any]", snapshot.to_dict()))
+
+
+class FirestoreFicheStore:
+    """`fiches/{slug}` documents — per-source analysis (F-016). `used_in` is array-unioned on
+    write (via a Firestore `merge` set with an `ArrayUnion` sentinel for that one field) so a
+    source cited again on a later date accumulates dates instead of losing the earlier one."""
+
+    def __init__(self, client: firestore.Client) -> None:
+        self._client = client
+
+    def _fiche_ref(self, slug: str) -> Any:
+        return self._client.collection(FICHES_COLLECTION).document(slug)
+
+    def put_fiche(self, slug: str, fiche: FicheDoc) -> None:
+        doc = fiche.model_dump(mode="json")
+        doc["used_in"] = firestore.ArrayUnion(fiche.used_in)
+        self._fiche_ref(slug).set(doc, merge=True)
+
+    def get_fiche(self, slug: str) -> FicheDoc | None:
+        snapshot = self._fiche_ref(slug).get()
+        if not snapshot.exists:
+            return None
+        return FicheDoc.model_validate(cast("dict[str, Any]", snapshot.to_dict()))
 
 
 class FirestoreSubscriptionStore:

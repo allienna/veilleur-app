@@ -3,6 +3,7 @@ import { Share2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import type { Components } from "react-markdown";
+import { Link } from "react-router-dom";
 
 import { AUTHOR_AVATAR_URL } from "@/config";
 import { ShareSheet } from "@/components/ShareSheet";
@@ -235,6 +236,19 @@ export function ArticleView({ article }: { article: Article }): JSX.Element {
         {further.length > 0 ? <LinkSection title="Pour aller plus loin" links={further} /> : null}
         {sources.length > 0 ? (
           <LinkSection title="Sources" links={sources} id="sources" numbered />
+        ) : null}
+        {sources.length > 0 ? (
+          // Fiches are generated only for cited sources (F-016 scope decision), which is exactly
+          // `sources` here — if generation partially failed, `/fiches` shows its own empty state
+          // rather than this button pre-checking a count.
+          <div className="mt-2xl pt-2 text-center">
+            <Link
+              to={`/fiches?article=${article.date}`}
+              className="inline-block rounded-xl bg-primary px-xl py-md text-sm font-black uppercase tracking-widest text-bg-inverted transition-colors duration-base ease-standard hover:bg-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+            >
+              Consulter toutes les analyses de cet article
+            </Link>
+          </div>
         ) : null}
         <p className="mt-3xl border-t border-border-subtle pt-xl text-sm italic text-fg-muted">
           {AI_DISCLAIMER}

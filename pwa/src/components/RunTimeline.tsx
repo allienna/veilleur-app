@@ -21,8 +21,8 @@ const reauthAction = (
   </a>
 );
 
-// `RunTimeline` — the live ordered list of the nine Minion steps with status + duration
-// (DESIGN §2). Always renders all nine in canonical order; steps the run hasn't reached yet are
+// `RunTimeline` — the live ordered list of the ten Minion steps with status + duration
+// (DESIGN §2). Always renders all ten in canonical order; steps the run hasn't reached yet are
 // pending. The run-level status is shown as a `StatusPill`; a run-level error surfaces in an
 // `ErrorBanner` above the list (a failed step's own error rides its row's status).
 export function RunTimeline({ run }: { run: Run }): JSX.Element {

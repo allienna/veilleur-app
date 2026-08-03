@@ -24,7 +24,7 @@ STEPS_SUBCOLLECTION: str = "steps"
 LOCKS_COLLECTION: str = "locks"  # locks/{LOCK_DOC_ID}
 LOCK_DOC_ID: str = "minion"  # single global lock (global single-flight)
 
-# The nine canonical pipeline steps, in execution order (the StepName enum is declaration
+# The ten canonical pipeline steps, in execution order (the StepName enum is declaration
 # ordered to match the pipeline; constitution §2.9 observability is per this set).
 STEP_ORDER: tuple[StepName, ...] = tuple(StepName)
 
@@ -194,6 +194,22 @@ PLACEHOLDER_ASSET: str = "placeholder.webp"
 
 # Run-level warning reason latched when the Imagen placeholder fallback fires (plan AD-4).
 IMAGEN_FALLBACK_WARNING: str = "imagen_moderation_fallback"
+
+# --- Fiches: per-source analysis (F-016) --------------------------------------------------
+# Non-blocking by design: a failed fiche is skipped, never a run failure (plan AD — "fiches are
+# never on the article's critical path"). Placed last in STEP_ORDER, after `publish`, so it can
+# never prevent the article itself from shipping.
+
+FICHES_COLLECTION: str = "fiches"
+
+# Shorter than CLAUDE_TIMEOUT: one source's markdown, not the whole assembled context.
+FICHE_TIMEOUT: timedelta = timedelta(minutes=4)
+FICHE_TRANSPORT_RETRIES: int = 1
+FICHE_BACKOFF_BASE: timedelta = timedelta(seconds=2)
+# IO-bound `claude` subprocess calls, run concurrently so N cited sources don't cost N times the
+# per-call wall-clock time end to end.
+FICHE_MAX_CONCURRENCY: int = 3
+MAX_FICHE_WORDS: int = 1500
 
 # --- Push notifications (F-012) ----------------------------------------------------------
 

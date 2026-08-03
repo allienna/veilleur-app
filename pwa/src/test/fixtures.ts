@@ -1,4 +1,5 @@
 import type { Article } from "@veilleur/shared/article";
+import type { Fiche } from "@veilleur/shared/fiche";
 import type { Run, RunStep } from "@veilleur/shared/run";
 
 /** Build a valid Article fixture; override any field. */
@@ -20,6 +21,34 @@ export function makeArticle(overrides: Partial<Article> = {}): Article {
     image: "2026-06-01.webp",
     commit_sha: "abc123",
     published: true,
+    ...overrides,
+  };
+}
+
+/** Build a valid Fiche fixture; override any field. */
+export function makeFiche(overrides: Partial<Fiche> = {}): Fiche {
+  return {
+    slug: "une-source",
+    url: "https://example.com/a",
+    title: "Une source",
+    theme: "IA",
+    keywords: ["ia", "agents"],
+    tone: "opinion",
+    used_in: ["2026-06-01"],
+    body: [
+      "## Résumé",
+      "Un résumé.",
+      "",
+      "## Points clés",
+      "- Un point.",
+      "",
+      "## Analyse approfondie",
+      "Une analyse.",
+      "",
+      "## Pourquoi ça compte",
+      "Parce que.",
+    ].join("\n"),
+    created_at: "2026-06-01T06:00:00.000Z",
     ...overrides,
   };
 }

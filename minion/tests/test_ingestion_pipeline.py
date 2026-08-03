@@ -14,6 +14,7 @@ import pytest
 
 from minion import config
 from minion.config import PARIS_TZ
+from minion.fiches.fakes import FakeFicheGenerateRunner
 from minion.generate.fakes import FakeGenerateRunner
 from minion.ingest.fakes import FakeGmailClient, FakeScraperClient
 from minion.ingest.models import Newsletter, ScrapedSource, SourceOutcome
@@ -25,7 +26,7 @@ from minion.publish.fakes import (
     FakePromptRewriter,
 )
 from minion.steps import build_pipeline
-from minion.store.memory import InMemoryArticleStore
+from minion.store.memory import InMemoryArticleStore, InMemoryFicheStore
 
 DATE = "2026-06-01"
 T0 = datetime(2026, 6, 1, 6, 0, tzinfo=PARIS_TZ)
@@ -65,11 +66,13 @@ def _run(gmail: FakeGmailClient, jina: FakeScraperClient, run_store, lock_store,
         FakePromptRewriter(),
         FakeContentRepository(),
         InMemoryArticleStore(),
+        FakeFicheGenerateRunner(),
+        InMemoryFicheStore(),
     )
     return run_pipeline(DATE, run_store=run_store, lock_store=lock_store, clock=clock, steps=steps)
 
 
-def test_happy_path_succeeds_through_all_nine_steps(run_store, lock_store, clock) -> None:
+def test_happy_path_succeeds_through_all_ten_steps(run_store, lock_store, clock) -> None:
     urls = [f"https://x.com/{i}" for i in range(5)]
     final = _run(
         FakeGmailClient([_newsletter("a@x.com", urls)]),
@@ -79,7 +82,7 @@ def test_happy_path_succeeds_through_all_nine_steps(run_store, lock_store, clock
         clock,
     )
     assert final.status is RunStatus.success
-    assert len(final.steps) == 9
+    assert len(final.steps) == 10
     assert all(s.status is RunStatus.success for s in final.steps)
 
 

@@ -1,4 +1,4 @@
-"""Stub implementations of the nine pipeline steps (F-003).
+"""Stub implementations of the ten pipeline steps (F-003).
 
 Each stub logs and returns canned, schema-shaped payload — no external calls. F-004+ replace
 these bodies with real Gmail/scrape/generate/Imagen/GitHub/publish logic against the same
@@ -24,6 +24,7 @@ _CANNED_PAYLOADS: dict[StepName, dict[str, object]] = {
     StepName.imagen: {"imageBytes": None},
     StepName.github: {"commit": None},
     StepName.publish: {"notified": False},
+    StepName.fiches: {"fiched": 0},
 }
 
 

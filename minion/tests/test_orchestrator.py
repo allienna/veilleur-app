@@ -34,7 +34,7 @@ class RecordingStep:
         return StepResult()
 
 
-def test_happy_path_writes_nine_success_steps(run_store, lock_store, clock) -> None:
+def test_happy_path_writes_ten_success_steps(run_store, lock_store, clock) -> None:
     final = run_pipeline(DATE, run_store=run_store, lock_store=lock_store, clock=clock)
     assert final.status is RunStatus.success
     assert final.error is None
@@ -58,7 +58,7 @@ def test_replay_overwrites_with_fresh_runid_no_orphans(run_store, lock_store, cl
     stored = run_store.get_run(DATE)
     assert stored is not None
     assert stored.runId == second.runId
-    assert len(stored.steps) == 9  # no duplicate/orphan children from the first attempt
+    assert len(stored.steps) == 10  # no duplicate/orphan children from the first attempt
 
 
 @dataclass

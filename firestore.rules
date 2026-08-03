@@ -35,6 +35,15 @@ service cloud.firestore {
       }
     }
 
+    // Per-source analysis the PWA reads behind an article's "Consulter toutes les analyses de
+    // cet article" CTA (F-016). Read-only for the allowed operator; client writes are always
+    // denied — only the Minion job's privileged service account writes fiches, server-side,
+    // bypassing these rules (same pattern as `articles`/`runs`).
+    match /fiches/{slug} {
+      allow read: if isAllowedOperator();
+      allow write: if false;
+    }
+
     // Web Push subscriptions (F-012 FR-3). The FIRST client-writable collection: the operator's
     // PWA creates/updates/deletes its own subscription doc so the Minion can read it server-side
     // and send notifications. Ownership-scoped — the doc's `operatorEmail` must be the allowed
