@@ -42,3 +42,7 @@ node_modules/
 
 # Transient /qa audit output — regenerate on demand, not versioned
 qa-report.md
+
+# Local pnpm cache and crash dumps (e.g. from Docker/QEMU debugging)
+.pnpm-store/
+*.core
