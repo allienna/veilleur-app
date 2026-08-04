@@ -49,7 +49,7 @@ Extend the existing `/runs/:date` view (already renders `RunTimeline`/`RunStepRo
 ## Design References
 | Surface | Components used | New components needed |
 |---------|-----------------|-----------------------|
-| `/supervision` trends section | `Card`, `StatusPill`, `text.caption` (existing tokens) | **A trend/sparkline chart component is NOT in the DESIGN.md inventory** — flagged here. `/design update` should run before `/implement` to add a minimal chart primitive (or confirm a text/table-only rendering of FR-1 to avoid adding one, if the operator prefers to keep it lazy). |
+| `/supervision` trends section | `TrendStat` (new, added to DESIGN.md §2 Standard inventory 2026-08-04), `Card`, `EmptyState` | none — `TrendStat` is now inventoried (CSS-only micro-bar, no chart library) |
 | `/runs/:date` inline diagnosis | `ErrorBanner` (existing, already used for the live auth-failure case), `Card` | none — reuses existing components, just richer content inside them |
 | `/runs/:date` per-step drill-down | `RunTimeline`, `RunStepRow`, `StatusPill` (existing) | none — extends existing usage to non-live dates |
 
@@ -73,4 +73,4 @@ Extend the existing `/runs/:date` view (already renders `RunTimeline`/`RunStepRo
 - Replacing `burn-in-log.md` — it stays as the durable, git-tracked record; this feature makes the same *kind* of insight visible day-to-day without opening the file, it doesn't retire it.
 
 ## Open Questions
-- **Q1 (chart component)**: FR-1 wants a visual trend, but no chart/sparkline primitive is in `DESIGN.md`'s inventory. Options: (a) run `/design update` to add a minimal one before `/implement`, or (b) render FR-1 as a table/text-stat block (`StatCard`-style, reusing `Card` + `text` tokens) with no new component, deferring a visual chart until it's actually missed. Given the project's now-solo, low-maintenance context, (b) is the lazier default — needs operator confirmation before `/plan`.
+- **Q1 (chart component) → RESOLVED (2026-08-04, option a)**: added `TrendStat` to `DESIGN.md` §2 Standard inventory — a `Card`-based stat row with a CSS-only micro-bar (no chart/SVG library, no new dependency). Covers FR-1's success-rate, cost, and failure-breakdown display.

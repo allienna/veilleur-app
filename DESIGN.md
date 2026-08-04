@@ -1,6 +1,6 @@
 # Veilleur-app — Design System
 
-**Last updated**: 2026-06-03
+**Last updated**: 2026-08-04
 **Status**: Living document
 **Surfaces covered**: `pwa` (primary), `astro-site` (external, token-aligned), `minion` (logs only)
 
@@ -228,6 +228,7 @@ Dark mode: same values but `rgb(0 0 0 / 0.40)` opacity.
 | `NotificationOptIn` | Push-notification enable/disable control: requests permission, subscribes, reflects state (F-012). On iOS surfaces the home-screen-install prerequisite. | `Button` (+ `Toast`) |
 | `FicheCard` | Per-source-analysis tile in the `/fiches` grid (mirrors Astro `FicheCard.astro`) | custom |
 | `FicheView` | Full fiche reader: breadcrumb, source/translate links, metadata `<dl>`, Résumé/Analyse/Points clés (mirrors Astro `FicheLayout.astro`) | custom `react-markdown` renderers |
+| `TrendStat` | Supervision-trends row (F-016): a label, a big `text.h2`/`font.mono` current value, and an inline CSS-only micro-bar (`div` width % of `max`, filled with the matching `color.status.*`/`color.semantic.*` token — no chart/SVG library). Used for rolling success rate, cumulative/average cost, and the failure-cause breakdown, stacked in the existing `/supervision` view (`Container` = `supervision`, `compact` density). | default, loading (`Skeleton` bar), empty (no runs in window → falls to `EmptyState`, not a zero-filled bar) | `Card` + custom bar (no new dependency) |
 
 ### Forbidden
 
@@ -287,6 +288,7 @@ No UI. Structured JSON logs only (`runId`, `step`, `level`). No ANSI color; Clou
 ### Empty
 - **No article today** (before 06:15 Europe/Paris or `skipped: no_sources`): `EmptyState` with mascot at 30% opacity, text "Pas d'article aujourd'hui", subline explaining cause (cron not yet run / no source) + `RunNowButton`.
 - **No run history**: `EmptyState`, text "Aucun run pour l'instant", no CTA (first cron run will populate).
+- **No runs in the trends window** (F-016 `TrendStat`): same `EmptyState` pattern, not a zero-filled bar — an empty bar reads as "0%" which is misleading when it actually means "no data yet".
 - **Always text-first**. Illustrations beyond the muted mascot are out of scope for v1.
 
 ### Error
