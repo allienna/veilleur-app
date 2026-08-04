@@ -101,13 +101,15 @@ See **Analysis** below the table before doing anything else with this log.
 | 2026-08-01 | (not fetched) | cron | failure | — | — | `insufficient_sources: 47/100 ok (3 paywalled, 50 failed)` — first real unassisted cron day post-fix; no more `no_sources`/`missing_attribution`, but F-015 local-extraction yield (root cause #2, never fixed) still fails the gate. |
 | 2026-08-02 | (not fetched) | cron | failure | — | — | `insufficient_sources: 21/100 ok (0 paywalled, 79 failed)` — same F-015 yield issue. |
 | 2026-08-03 | 01KZ2WG4D073AJCWWCW6XQ0FGT | cron | **success** | 0.892 | 4m33s | tokens 22552. **First fully unassisted cron success since the fixes** — no manual replay involved. |
+| 2026-08-04 | 01KZ5EXH50CEN0MH11AZF7H5DT | cron | **success** | 0.873 | 7m51s | tokens 26585. Second consecutive unassisted success (weekday, Tue). |
 
-**Consecutive successes:** 1 / 7 (post-fix: 07-31 success, 08-01 failure resets it, 08-02 failure,
-08-03 success — counter restarts at 1) · **Window (post-fix days only):** 2 successes / 3 days
-(07-31, 08-01, 08-02, 08-03 = 4 days, 2 OK). The 2 post-fix failures are both `insufficient_sources`
-and both fall on a **weekend (Sat 08-01, Sun 08-02)** — low newsletter volume on weekends is a
-plausible contributing factor, not necessarily F-015 yield regressing further (see Analysis's
-weekend-correlation note). Pre-fix 61-day baseline (3-4 successes / 61 days) is historical
+**Consecutive successes:** 2 / 7 (post-fix: 07-31 success, 08-01 failure resets it, 08-02 failure,
+08-03 success, 08-04 success — counter now at 2, both weekday runs) · **Window (post-fix days
+only):** 3 successes / 5 days (07-31, 08-01, 08-02, 08-03, 08-04 = 5 days, 3 OK). The 2 post-fix
+failures are both `insufficient_sources` and both fall on a **weekend (Sat 08-01, Sun 08-02)** — low
+newsletter volume on weekends is a plausible contributing factor, not necessarily F-015 yield
+regressing further (see Analysis's weekend-correlation note); the two clean weekday runs since
+(08-03, 08-04) support that reading. Pre-fix 61-day baseline (3-4 successes / 61 days) is historical
 context only, not part of this rolling tally.
 
 ## Post-fix note (2026-07-31) — 3 root causes found and fixed in-track
