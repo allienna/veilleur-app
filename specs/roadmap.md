@@ -142,7 +142,7 @@ Decomposes the PRD into vertically-sliced features ordered by dependency. Each f
 **Delivers**: Operator can spot reliability patterns (e.g. the weekend `insufficient_sources` correlation flagged in `burn-in-log.md`) and diagnose a failed run from the PWA alone, without SSH-ing into Firestore or Cloud Logging.
 **Surfaces**: `pwa`
 **Estimated size**: M
-**Status**: In Progress
+**Status**: Complete
 
 ## Feature Table
 
