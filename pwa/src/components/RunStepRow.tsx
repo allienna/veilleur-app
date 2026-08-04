@@ -30,23 +30,30 @@ export function RunStepRow({ name, step }: { name: StepName; step?: RunStep }): 
   const pending = step === undefined;
 
   return (
-    <li className="flex items-center justify-between py-sm">
-      <span className="flex items-center gap-sm">
-        <span
-          aria-hidden
-          className={cn(
-            "size-2.5 rounded-full",
-            pending ? "bg-status-neutral opacity-40" : STATUS_DOT[status],
-            isRunning && "motion-safe:animate-pulse",
-          )}
-        />
-        <span className={cn("text-body", pending ? "text-fg-muted" : "text-fg")}>
-          {STEP_LABEL[name]}
+    <li className="flex flex-col gap-xs py-sm">
+      <div className="flex items-center justify-between">
+        <span className="flex items-center gap-sm">
+          <span
+            aria-hidden
+            className={cn(
+              "size-2.5 rounded-full",
+              pending ? "bg-status-neutral opacity-40" : STATUS_DOT[status],
+              isRunning && "motion-safe:animate-pulse",
+            )}
+          />
+          <span className={cn("text-body", pending ? "text-fg-muted" : "text-fg")}>
+            {STEP_LABEL[name]}
+          </span>
         </span>
-      </span>
-      <span className="text-caption text-fg-muted tabular-nums">
-        {pending ? "—" : formatDuration(step?.startedAt, step?.endedAt, isRunning ? now : undefined)}
-      </span>
+        <span className="text-caption text-fg-muted tabular-nums">
+          {pending
+            ? "—"
+            : formatDuration(step?.startedAt, step?.endedAt, isRunning ? now : undefined)}
+        </span>
+      </div>
+      {/* A step's own error (F-016 FR-3) — distinct from the run-level error banner above the
+          timeline; this is per-step detail for drilling into a specific failed step. */}
+      {step?.error ? <p className="pl-[22px] text-caption text-status-error">{step.error}</p> : null}
     </li>
   );
 }

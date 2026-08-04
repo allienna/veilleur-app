@@ -6,7 +6,7 @@ import { StatusPill } from "@/components/StatusPill";
 import { Card, CardContent } from "@/components/ui/card";
 import { REAUTH_RUNBOOK_URL } from "@/config";
 import { STEP_ORDER } from "@/data/runs";
-import { isAuthFailure } from "@/lib/runErrors";
+import { isAuthFailure, parseInsufficientSources } from "@/lib/runErrors";
 
 // When a run fails on an auth error, the banner offers a direct link to the OAuth re-auth runbook
 // (F-013 FR-1) so the operator can recover the revoked credential from their phone.
@@ -27,6 +27,10 @@ const reauthAction = (
 // `ErrorBanner` above the list (a failed step's own error rides its row's status).
 export function RunTimeline({ run }: { run: Run }): JSX.Element {
   const byName = new Map(run.steps.map((s) => [s.name, s]));
+  // Inline failure diagnosis (F-016 FR-2): a structured ok/paywalled/failed summary when the raw
+  // error matches the Minion's ingestion-gate message shape. The raw string always stays visible
+  // above — a failed parse (older log format, unrelated error) never hides information.
+  const breakdown = parseInsufficientSources(run.error);
 
   return (
     <div className="flex flex-col gap-md">
@@ -39,6 +43,12 @@ export function RunTimeline({ run }: { run: Run }): JSX.Element {
           message={run.error}
           action={isAuthFailure(run.error) ? reauthAction : undefined}
         />
+      ) : null}
+      {breakdown ? (
+        <p className="text-caption text-fg-muted">
+          Sources : {breakdown.ok}/{breakdown.total} ok · {breakdown.paywalled} payantes ·{" "}
+          {breakdown.failed} en échec
+        </p>
       ) : null}
       <Card>
         <CardContent className="py-sm">
