@@ -1,10 +1,10 @@
 # Veilleur-app — Feature Roadmap
 
 **Generated from**: PRD.md, specs/constitution.md, DESIGN.md
-**Last updated**: 2026-06-03
+**Last updated**: 2026-08-04
 **Status**: Approved
 
-Decomposes the PRD into vertically-sliced features ordered by dependency. Each feature is self-contained, demoable, and sized for 0.5–2 days of work with Claude Code. Calendar context: production target **2026-05-20** (M7), DevLille talk **2026-06-11** (M11) — see §Milestones and the calendar note at the end.
+Decomposes the PRD into vertically-sliced features ordered by dependency. Each feature is self-contained, demoable, and sized for 0.5–2 days of work with Claude Code. Calendar context (historical): production target **2026-05-20** (M7), DevLille talk **2026-06-11** (M11) — both passed; see §Milestones "M∞ — Ongoing operation" for the current, deadline-free phase.
 
 ## Features
 
@@ -135,6 +135,15 @@ Decomposes the PRD into vertically-sliced features ordered by dependency. Each f
 **Estimated size**: M
 **Status**: In Progress
 
+### F-016: Supervision insights
+**Summary**: Enriches the existing PWA supervision surface (F-011) with three read-only views built entirely from data already collected (`runs/{runId}/steps/{stepName}` since F-003, `burn-in-log.md` for the rolling window): (1) trends — 21-day rolling success rate, cumulative cost, failure-cause breakdown (`no_sources` / `insufficient_sources` / `missing_attribution` / other) over time; (2) richer failure diagnosis inline in a run's detail view (scrape ok/paywalled/failed breakdown, a link to the re-auth runbook on auth-related failures) instead of requiring a manual Firestore/log dig; (3) per-step drill-down on a past run (duration, tokens, error) beyond today's single overall status. No PRD change — fits within existing FR-D1 (live supervision) / FR-D2 (run history) scope, just deeper views of data already written.
+**PRD sections**: FR-D1, FR-D2
+**Depends on**: F-011 (extends it, does not replace it)
+**Delivers**: Operator can spot reliability patterns (e.g. the weekend `insufficient_sources` correlation flagged in `burn-in-log.md`) and diagnose a failed run from the PWA alone, without SSH-ing into Firestore or Cloud Logging.
+**Surfaces**: `pwa`
+**Estimated size**: M
+**Status**: Not started
+
 ## Feature Table
 
 | # | Feature | Depends on | Size | Surface |
@@ -154,6 +163,7 @@ Decomposes the PRD into vertically-sliced features ordered by dependency. Each f
 | F-013 | Hardening + burn-in (ongoing reliability) | F-012 | M (historical) / ongoing | repo-wide |
 | ~~F-014~~ | ~~Live-demo reserved track stub~~ | ~~F-013~~ | — | **Retired** (talk passed, stub never activated) |
 | F-015 | Ingestion resilience — local content extraction | F-004 (surfaced by F-013) | M | minion |
+| F-016 | Supervision insights | F-011 | M | pwa |
 
 ## Dependency Graph
 
@@ -171,13 +181,14 @@ F-001 spike
         │                             ├─▶ F-010 LinkedIn share
         │                             └─▶ F-011 supervision + trigger ◀─ F-008
         │                                   └─▶ F-012 push notifications ◀─ F-007
-        │                                         └─▶ F-013 hardening + burn-in (ongoing, no end node — F-014 retired)
+        │                                         └─▶ F-013 hardening + burn-in (ongoing)
+        │                                               └─▶ F-016 supervision insights (extends F-011, not a burn-in gate)
         ├─▶ F-015 local extraction (supersedes F-004 scraper) ──┐
         │     (surfaced by F-013 burn-in; blocks burn-in resume)─┘──▶ F-013 burn-in continues
         └─ (F-009 also reads from F-006's article output)
 ```
 
-Critical path (historical, pre-talk): **F-001 → F-002 → F-003 → F-004 → F-005 → F-006 → F-007 → F-008 → F-011 → F-012 → F-013** (11 steps; F-014 retired, no longer a terminal node). **F-015** is an out-of-band remediation (depends F-004, surfaced by F-013 burn-in): it is not on the original critical path but **gates F-013's burn-in progress** — burn-in cannot accumulate clean runs until F-015's yield issue is fully resolved (still ongoing post-talk, see burn-in-log.md weekend-correlation note). Post-talk, F-013 is the last node on the roadmap: it has no successor feature, just a standing reliability objective (§1 Ongoing goals, ≥60 consecutive days) that continues until met.
+Critical path (historical, pre-talk): **F-001 → F-002 → F-003 → F-004 → F-005 → F-006 → F-007 → F-008 → F-011 → F-012 → F-013** (11 steps; F-014 retired, no longer a terminal node). **F-015** is an out-of-band remediation (depends F-004, surfaced by F-013 burn-in): it is not on the original critical path but **gates F-013's burn-in progress** — burn-in cannot accumulate clean runs until F-015's yield issue is fully resolved (still ongoing post-talk, see burn-in-log.md weekend-correlation note). **F-016** depends only on F-011 (already merged) — it can be built any time, independent of F-013/F-015's burn-in progress; it's a PWA-only view enhancement, not gated by pipeline reliability. Post-talk, F-013 has no successor on the reliability chain — just a standing objective (§1 Ongoing goals, ≥60 consecutive days) that continues until met; F-016 is the first feature added purely for ongoing personal use rather than pre-talk hardening.
 
 Parallelization opportunity: once F-006 lands, F-007 (deploy) and F-009 (PWA reading) can run in parallel — the Minion + PWA tracks split here.
 
@@ -199,9 +210,9 @@ Parallelization opportunity: once F-006 lands, F-007 (deploy) and F-009 (PWA rea
 **Demoable**: The DevLille talk itself, delivered 2026-06-11 — via the backup video / fallback path, not this app live. `specs/`, the slash-command spec at `minion/.claude/commands/generate.md`, and the git history told the story end-to-end regardless.
 
 ### M∞ — Ongoing operation (PRD §9 Phase 5, no fixed deadline)
-**Features**: F-013 (continues), F-015 (yield issue still being root-caused)
+**Features**: F-013 (continues), F-015 (yield issue still being root-caused), F-016 (new)
 **Goal**: Reach ≥90% success on a rolling 21-day window, working toward ≥60 consecutive autonomous days (PRD §1 Ongoing goals). No calendar deadline — paced by the operator's actual daily use, not a milestone date.
-**Current state (2026-08-04)**: 2/7 consecutive successes post-fix; three root causes (Gmail window anchoring, wrong mailbox, `missing_attribution` false positives) fixed 2026-07-31; a possible weekend low-volume effect on the remaining `insufficient_sources` failures is being tracked, not yet confirmed.
+**Current state (2026-08-04)**: 2/7 consecutive successes post-fix; three root causes (Gmail window anchoring, wrong mailbox, `missing_attribution` false positives) fixed 2026-07-31; a possible weekend low-volume effect on the remaining `insufficient_sources` failures is being tracked, not yet confirmed. F-016 (supervision insights) added to make that kind of pattern visible from the PWA itself instead of hand-built log analysis.
 
 ## Calendar reality — historical (superseded 2026-08-04)
 
