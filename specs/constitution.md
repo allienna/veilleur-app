@@ -4,7 +4,7 @@
 
 ## 1. Project Context
 
-Veilleur-app is a mono-tenant, mono-user automated tech-watch pipeline: a Stripe-style "Minion" (one-shot Cloud Run Job orchestrating Python + `claude -p`) that publishes a daily synthesis article to a public Astro site, and a PWA for supervision and LinkedIn copy-paste publishing. The repo doubles as a demo artefact for the DevLille 2026 talk on spec-driven development — the spec narrative (PRD, constitution, roadmap, specs/, git history) is itself a deliverable.
+Veilleur-app is a mono-tenant, mono-user automated tech-watch pipeline: a Stripe-style "Minion" (one-shot Cloud Run Job orchestrating Python + `claude -p`) that publishes a daily synthesis article to a public Astro site, and a PWA for supervision and LinkedIn copy-paste publishing. It replaces the author's fragile local v1 (n8n) with an unattended, cloud-native daily pipeline he actually relies on for his personal tech watch. The project originated as a demo artefact for the DevLille 2026 talk on spec-driven development; the talk has since happened (without this app in the live demo) and the project now continues as ongoing personal infrastructure — reliability and low running cost matter more than legibility to an outside audience, though the spec-driven build process (PRD, constitution, roadmap, specs/, git history) remains how this project is built.
 
 ## 2. Non-Negotiable Principles
 
