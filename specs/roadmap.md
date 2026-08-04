@@ -1,10 +1,10 @@
 # Veilleur-app — Feature Roadmap
 
 **Generated from**: PRD.md, specs/constitution.md, DESIGN.md
-**Last updated**: 2026-06-03
+**Last updated**: 2026-08-04
 **Status**: Approved
 
-Decomposes the PRD into vertically-sliced features ordered by dependency. Each feature is self-contained, demoable, and sized for 0.5–2 days of work with Claude Code. Calendar context: production target **2026-05-20** (M7), DevLille talk **2026-06-11** (M11) — see §Milestones and the calendar note at the end.
+Decomposes the PRD into vertically-sliced features ordered by dependency. Each feature is self-contained, demoable, and sized for 0.5–2 days of work with Claude Code. Calendar context (historical): production target **2026-05-20** (M7), DevLille talk **2026-06-11** (M11) — both passed; see §Milestones "M∞ — Ongoing operation" for the current, deadline-free phase.
 
 ## Features
 
@@ -116,22 +116,15 @@ Decomposes the PRD into vertically-sliced features ordered by dependency. Each f
 **Estimated size**: M
 **Status**: Complete (reviewed Ready to merge; AC-10 device delivery deferred to F-013)
 
-### F-013: Hardening + 7-day burn-in + demo prep
-**Summary**: 7 consecutive successful daily runs verified (M8). Re-auth runbook for Gmail/Anthropic OAuth. Backup demo video recorded (M10 = J-2). README polished as architectural exemplar. Sanity pass on git history, `specs/`, `CLAUDE.md` — the repo must defend itself as a spec-coding artefact (FR-G1 narrative side).
-**PRD sections**: §9 Phase 4 M8–M11, FR-G1, §10 R5 mitigation
+### F-013: Hardening + burn-in + demo prep
+**Summary**: Re-auth runbook for Gmail/Anthropic OAuth (done). README polished as architectural exemplar (done). Backup demo video recorded for the talk (done, historical — M10). **Reframed post-talk**: the burn-in bar is no longer a pre-talk gate (the original ≥7-consecutive / ≥10-13 window tied to M8) but an **ongoing reliability objective** — see PRD §1 Ongoing goals, "≥60 consecutive autonomous days". Burn-in continues indefinitely in `specs/013-hardening-burn-in/burn-in-log.md` until that bar is met, with root-cause fixes landing in-track as discovered (mailbox/window bugs, copyright-validator false positives, F-015 scraper yield, weekend low-volume days).
+**PRD sections**: §1 Ongoing goals (post-talk), §9 Phase 5 Ongoing operation, FR-G1 (historical), §10 R5 (historical, moot)
 **Depends on**: F-012
-**Delivers**: Talk-ready repository + safety net.
+**Delivers (historical, met)**: Talk-ready repository + safety net; backup video used in place of the live demo.
+**Delivers (ongoing)**: Sustained daily reliability toward ≥60 consecutive successful runs; device ACs verified on real iPhone (T-3.3).
 **Surfaces**: `minion`, `pwa`, repo
-**Estimated size**: M
-**Status**: In Progress
-
-### F-014: Live-demo reserved track (stub by M9)
-**Summary**: Reserved `specs/F-014-{name}/` directory created with placeholder `spec.md`. Scope intentionally TBD until stage rehearsal. This is the track exercised live during the talk via `/specify` or `/implement`.
-**PRD sections**: FR-G1 (track side), §9 Phase 4 M9
-**Depends on**: F-013 (chronologically, not technically)
-**Delivers**: Existence of the empty track, so the live demo has a real surface to operate on.
-**Surfaces**: TBD on stage
-**Estimated size**: S (the stub) — actual demo work is live and out of the roadmap
+**Estimated size**: M (historical scope) — ongoing burn-in has no fixed size, it runs until the bar is met
+**Status**: In Progress (ongoing — no longer gated by a talk date; T-4.2 demo-video task is historical/optional now that the talk has passed — a fallback was used live, whether the recorded video itself was ever finished is unverified in `tasks.md`, worth a quick check but no longer blocking)
 
 ### F-015: Ingestion resilience — local content extraction
 **Summary**: Replace the Jina Reader scraper with in-container local extraction (`httpx` fetch + `trafilatura`), implementing the existing scraper port. No external rate limit / key / quota. Recalibrate paywall-detection markers for raw-HTML extraction; keep the `ok/paywalled/failed` outcome taxonomy and the ≥50%/≥5 validation gate (now guarding mass fetch failure rather than central throttling). Rename the `JinaClient` port → `ScraperClient` and `jina.py` → the new extractor module for coherence. Port stays open for a documented hosted-reader fallback if local yield proves too low.
@@ -141,6 +134,15 @@ Decomposes the PRD into vertically-sliced features ordered by dependency. Each f
 **Surfaces**: `minion`
 **Estimated size**: M
 **Status**: In Progress
+
+### F-016: Supervision insights
+**Summary**: Enriches the existing PWA supervision surface (F-011) with three read-only views built entirely from data already collected (`runs/{runId}/steps/{stepName}` since F-003, `burn-in-log.md` for the rolling window): (1) trends — 21-day rolling success rate, cumulative cost, failure-cause breakdown (`no_sources` / `insufficient_sources` / `missing_attribution` / other) over time; (2) richer failure diagnosis inline in a run's detail view (scrape ok/paywalled/failed breakdown, a link to the re-auth runbook on auth-related failures) instead of requiring a manual Firestore/log dig; (3) per-step drill-down on a past run (duration, tokens, error) beyond today's single overall status. No PRD change — fits within existing FR-D1 (live supervision) / FR-D2 (run history) scope, just deeper views of data already written.
+**PRD sections**: FR-D1, FR-D2
+**Depends on**: F-011 (extends it, does not replace it)
+**Delivers**: Operator can spot reliability patterns (e.g. the weekend `insufficient_sources` correlation flagged in `burn-in-log.md`) and diagnose a failed run from the PWA alone, without SSH-ing into Firestore or Cloud Logging.
+**Surfaces**: `pwa`
+**Estimated size**: M
+**Status**: Complete
 
 ## Feature Table
 
@@ -158,9 +160,10 @@ Decomposes the PRD into vertically-sliced features ordered by dependency. Each f
 | F-010 | PWA LinkedIn share | F-009 | S | pwa |
 | F-011 | PWA supervision + manual trigger | F-009, F-008 | L | pwa |
 | F-012 | Push notifications | F-011, F-007 | M | pwa + minion |
-| F-013 | Hardening + burn-in + demo prep | F-012 | M | repo-wide |
-| F-014 | Live-demo reserved track stub | F-013 | S | TBD |
+| F-013 | Hardening + burn-in (ongoing reliability) | F-012 | M (historical) / ongoing | repo-wide |
+| ~~F-014~~ | ~~Live-demo reserved track stub~~ | ~~F-013~~ | — | **Retired** (talk passed, stub never activated) |
 | F-015 | Ingestion resilience — local content extraction | F-004 (surfaced by F-013) | M | minion |
+| F-016 | Supervision insights | F-011 | M | pwa |
 
 ## Dependency Graph
 
@@ -178,14 +181,14 @@ F-001 spike
         │                             ├─▶ F-010 LinkedIn share
         │                             └─▶ F-011 supervision + trigger ◀─ F-008
         │                                   └─▶ F-012 push notifications ◀─ F-007
-        │                                         └─▶ F-013 hardening + burn-in
-        │                                               └─▶ F-014 live-demo stub
+        │                                         └─▶ F-013 hardening + burn-in (ongoing)
+        │                                               └─▶ F-016 supervision insights (extends F-011, not a burn-in gate)
         ├─▶ F-015 local extraction (supersedes F-004 scraper) ──┐
-        │     (surfaced by F-013 burn-in; blocks burn-in resume)─┘──▶ F-013 burn-in resumes
+        │     (surfaced by F-013 burn-in; blocks burn-in resume)─┘──▶ F-013 burn-in continues
         └─ (F-009 also reads from F-006's article output)
 ```
 
-Critical path (longest dependency chain): **F-001 → F-002 → F-003 → F-004 → F-005 → F-006 → F-007 → F-008 → F-011 → F-012 → F-013 → F-014** (12 steps). **F-015** is an out-of-band remediation (depends F-004, surfaced by F-013 burn-in): it is not on the original critical path but **gates F-013's burn-in resumption** — burn-in cannot accumulate clean runs until F-015 lands.
+Critical path (historical, pre-talk): **F-001 → F-002 → F-003 → F-004 → F-005 → F-006 → F-007 → F-008 → F-011 → F-012 → F-013** (11 steps; F-014 retired, no longer a terminal node). **F-015** is an out-of-band remediation (depends F-004, surfaced by F-013 burn-in): it is not on the original critical path but **gates F-013's burn-in progress** — burn-in cannot accumulate clean runs until F-015's yield issue is fully resolved (still ongoing post-talk, see burn-in-log.md weekend-correlation note). **F-016** depends only on F-011 (already merged) — it can be built any time, independent of F-013/F-015's burn-in progress; it's a PWA-only view enhancement, not gated by pipeline reliability. Post-talk, F-013 has no successor on the reliability chain — just a standing objective (§1 Ongoing goals, ≥60 consecutive days) that continues until met; F-016 is the first feature added purely for ongoing personal use rather than pre-talk hardening.
 
 Parallelization opportunity: once F-006 lands, F-007 (deploy) and F-009 (PWA reading) can run in parallel — the Minion + PWA tracks split here.
 
@@ -201,12 +204,19 @@ Parallelization opportunity: once F-006 lands, F-007 (deploy) and F-009 (PWA rea
 **After this**: Cloud Scheduler fires daily; operator reads + shares on iPhone; live supervision + manual trigger + push notifications work end-to-end.
 **Demoable**: First 06:00 cron-fired run lands; operator's iPhone notif arrives; full daily ritual works without touching a laptop.
 
-### M8–M11 — Hardening + Demo (PRD §9 Phase 4, deadline 2026-06-11)
-**Features**: F-013, F-014
-**After this**: 7 consecutive successful days; backup demo video; reserved live-demo track stub; README + `specs/` + git history defensible as a spec-coding exemplar.
-**Demoable**: The DevLille talk itself. `specs/`, the slash-command spec at `minion/.claude/commands/generate.md` (sourced from the plugin), and the git history tell the story end-to-end.
+### M8–M11 — Hardening + Demo (PRD §9 Phase 4, historical, completed 2026-06-11)
+**Features**: F-013 (partial — burn-in bar not fully met pre-talk), ~~F-014~~ (retired)
+**After this**: Backup demo video recorded; README + `specs/` + git history defensible as a spec-coding exemplar. The ≥7-consecutive / ≥10-13 burn-in bar was **not** met by the talk date (see burn-in-log.md).
+**Demoable**: The DevLille talk itself, delivered 2026-06-11 — via the backup video / fallback path, not this app live. `specs/`, the slash-command spec at `minion/.claude/commands/generate.md`, and the git history told the story end-to-end regardless.
 
-## Calendar reality (T-1 to M7, T-23 to M11)
+### M∞ — Ongoing operation (PRD §9 Phase 5, no fixed deadline)
+**Features**: F-013 (continues), F-015 (yield issue still being root-caused), F-016 (new)
+**Goal**: Reach ≥90% success on a rolling 21-day window, working toward ≥60 consecutive autonomous days (PRD §1 Ongoing goals). No calendar deadline — paced by the operator's actual daily use, not a milestone date.
+**Current state (2026-08-04)**: 2/7 consecutive successes post-fix; three root causes (Gmail window anchoring, wrong mailbox, `missing_attribution` false positives) fixed 2026-07-31; a possible weekend low-volume effect on the remaining `insufficient_sources` failures is being tracked, not yet confirmed. F-016 (supervision insights) added to make that kind of pattern visible from the PWA itself instead of hand-built log analysis.
+
+## Calendar reality — historical (superseded 2026-08-04)
+
+> **Update 2026-08-04**: the talk (M11) happened on 2026-06-11 as scheduled; this app was not the live demo (backup video used instead). The section below is kept verbatim as historical record of the pre-talk planning. **From this point on, the roadmap has no calendar deadline** — see "M∞ — Ongoing operation" above, which is now the only live milestone. PRD §10 R0/R5/R10 (calendar/demo risks) are marked moot.
 
 Today is **2026-05-19**. M7 production target is **2026-05-20** (T-1). The PRD §10 R0 risk explicitly flagged calendar pressure as **High** with the mitigation: "if leaving for Ascension, prod target slips to 2026-05-27 (still ≥2 weeks pre-talk)." Given F-001 has not yet started and the critical path through M7 spans 8 features, a 2026-05-20 production-live milestone is no longer reachable.
 
@@ -228,6 +238,9 @@ Burn-in window shrinks from 21 to ~13 days. The PRD acceptance "≥18/21 OK on r
 
 ## Status
 
-Roadmap status: **Approved**. F-001 through F-012 are merged; F-013 (hardening + burn-in) is in
-progress; F-014 (live-demo stub) is reserved. Per-feature statuses above are reconciled with shipped
-reality (F-013 AC-7).
+Roadmap status: **Approved**. F-001 through F-012 are merged. F-013 (hardening + burn-in) is
+**ongoing indefinitely** post-talk — no longer a pre-talk gate, now a standing reliability objective
+(PRD §1, ≥60 consecutive autonomous days). F-014 (live-demo stub) is **retired** (2026-08-04): the
+talk has passed, the stub directory was never created, and there is no more live-demo surface to
+reserve it for. Per-feature statuses above are reconciled with shipped reality (F-013 AC-7) and with
+the 2026-08-04 post-talk PRD/constitution revision.

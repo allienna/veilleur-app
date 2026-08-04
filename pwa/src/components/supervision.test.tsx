@@ -66,6 +66,24 @@ describe("RunStepRow", () => {
     );
     expect(screen.getByText("5,0 s")).toBeInTheDocument();
   });
+
+  it("shows a step's own error inline (F-016 FR-3)", () => {
+    render(
+      <ul>
+        <RunStepRow name="jina" step={makeStep({ name: "jina", status: "failure", error: "boom" })} />
+      </ul>,
+    );
+    expect(screen.getByText("boom")).toBeInTheDocument();
+  });
+
+  it("shows nothing extra when a step has no error", () => {
+    render(
+      <ul>
+        <RunStepRow name="gmail" step={makeStep({ error: null })} />
+      </ul>,
+    );
+    expect(screen.queryByText(/./, { selector: "p" })).not.toBeInTheDocument();
+  });
 });
 
 describe("RunTimeline", () => {
@@ -80,6 +98,27 @@ describe("RunTimeline", () => {
   it("surfaces a run-level error in an alert", () => {
     render(<RunTimeline run={makeRun({ status: "failure", error: "generate: boom" })} />);
     expect(screen.getByRole("alert")).toHaveTextContent("generate: boom");
+  });
+
+  it("shows a structured breakdown when the error matches the scrape-gate shape (F-016 FR-2)", () => {
+    const { container } = render(
+      <RunTimeline
+        run={makeRun({
+          status: "failure",
+          error: "insufficient_sources: 12/100 ok (3 paywalled, 85 failed; need ≥5 and ≥50%)",
+        })}
+      />,
+    );
+    expect(screen.getByRole("alert")).toHaveTextContent("insufficient_sources");
+    expect(container).toHaveTextContent("Sources : 12/100 ok · 3 payantes · 85 en échec");
+  });
+
+  it("falls back to the raw string when the error doesn't match a known shape", () => {
+    const { container } = render(
+      <RunTimeline run={makeRun({ status: "failure", error: "generate: claude /generate timed out" })} />,
+    );
+    expect(screen.getByRole("alert")).toHaveTextContent("timed out");
+    expect(container).not.toHaveTextContent("Sources :");
   });
 });
 

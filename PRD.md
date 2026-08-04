@@ -1,37 +1,35 @@
 # Veilleur-app — Product Requirements Document
 
-**Last updated**: 2026-05-10
-**Status**: Draft (awaiting approval)
+**Last updated**: 2026-08-04
+**Status**: Approved (post-talk revision)
 **Author**: Aurélien Allienne ([@allienna](https://github.com/allienna))
 
 ## 1. Overview
 
 ### Problem Statement
-The current v1 of Veilleur depends on a local n8n containerised via Colima and a manual `/generate` trigger inside Claude Code on the author's Mac. This is fragile (machine must be on, daemon must survive reboot) and unusable on the go. It also mixes low-code orchestration (n8n) and custom code in a way that is pragmatic but not architecturally exemplary, undermining its use as a demonstration artefact for the DevLille 2026 talk *"Le vibe coding est mort, vive le spec coding"*. The talk requires an artefact that embodies spec coding at **two** levels: at construction-time (PRD → constitution → roadmap → specs → implementation, with git history as proof) and at runtime (a one-shot agent — a "Minion" in the Stripe sense — whose runtime literally executes a versioned slash-command spec).
+The current v1 of Veilleur depends on a local n8n containerised via Colima and a manual `/generate` trigger inside Claude Code on the author's Mac. This is fragile (machine must be on, daemon must survive reboot) and unusable on the go. It also mixes low-code orchestration (n8n) and custom code in a way that is pragmatic but not architecturally exemplary. Veilleur-app (v2) replaces it with a fully autonomous, cloud-native daily pipeline the operator can trust to run unattended and supervise from a phone.
+
+**Post-talk update (2026-08-04):** the original driver for this rewrite was the DevLille 2026 talk *"Le vibe coding est mort, vive le spec coding"* — the app was meant to be both the runtime artefact (a Minion executing a versioned spec) and the construction-time artefact (PRD → constitution → roadmap → specs, git history as proof). The talk has now happened; this app did not make it into the live demo (the backup video / fallback path was used instead — see `specs/013-hardening-burn-in/demo-runbook.md`). The project continues as the author's actual daily tech-watch tool. It is no longer scoped or paced around a conference deadline — the **Ongoing goals** below are now the primary compass; the former DevLille targets are kept below only as historical record.
 
 ### Goals & Success Metrics
 
-**At DevLille (2026-06-11/12) — hard targets:**
-- Pipeline runs autonomously daily for ≥3 weeks pre-talk (production live by 2026-05-20).
-- ≥90% of days produce a publishable article without human intervention.
-- ≥30 articles published on `allienna.github.io/veilleur`; ≥25 shared on LinkedIn (shared/published ratio = a posteriori quality proxy).
-- PWA installed and used daily on iPhone + Mac.
-- All `claude-feature-flow` phases (`/prd` → `/merge`) traversed ≥1×, with git history and `specs/` as evidence.
-- ≥1 feature track reserved for live `/specify` or `/implement` demo on stage.
-- Repo quality: `README.md`, `CLAUDE.md`, `ROADMAP.md`, `PRD.md`, `DESIGN.md`, `specs/` — defensible as architectural exemplar.
-- Costs: GCP ≤ 5€/mo · Claude LLM 0€ via Max 5× (CLAUDE_CODE_OAUTH_TOKEN), 30€/mo hard cap on API key fallback · Imagen ~0.60€/mo.
-
-**At 6 months (2026-12-31):**
+**Ongoing goals (primary compass, no fixed deadline):**
+- Pipeline runs autonomously daily, ≥90% of days producing a publishable article without human intervention, tracked on a rolling 21-day window (see `specs/013-hardening-burn-in/burn-in-log.md`).
+- Costs stay within GCP ≤5€/mo · Claude LLM 0€ via Max 5× (`CLAUDE_CODE_OAUTH_TOKEN`), 30€/mo hard cap on API-key fallback · Imagen ~0.60€/mo.
+- Operator reads the daily article and shares to LinkedIn from the PWA in ≤30s, as part of the daily morning routine.
 - v1 fully decommissioned (n8n stopped, data archived/migrated).
-- Pipeline ≥60 consecutive autonomous days.
-- ≥1 extension shipped (e.g., NotebookLM Minion, source-cards Minion) as extensibility proof.
-- ≥1 technical blog post or second talk fed by the project.
+- Pipeline reaches ≥60 consecutive autonomous days (supersedes the pre-talk ≥7-day burn-in bar).
+- ≥1 extension shipped (e.g., NotebookLM Minion, source-cards Minion) as extensibility proof, by 2026-12-31.
+- ≥1 technical blog post or second talk fed by the project, by 2026-12-31.
+
+**Historical milestone (met/superseded — kept for record, no longer drives scope):** the original hard targets for DevLille 2026-06-11/12 — production live by 2026-05-20, ≥3 weeks pre-talk autonomy, ≥30 articles published / ≥25 LinkedIn shares, a feature track reserved for a live `/specify`/`/implement` demo on stage, repo defensible as an architectural exemplar for ~200–400 attendees — drove milestones M0–M11 (§9). The talk happened on schedule; this app was not the live demo (backup used instead).
 
 ### Target Users
 | Persona | Description | Primary needs |
 |---------|-------------|---------------|
 | **Aurélien Allienne (operator + reader)** | GenAI Architect, sole production user. Reads ~10 tech newsletters/day. Morning routine: open PWA on iPhone (commute/café) → read overnight article → copy LinkedIn post → paste into LinkedIn iOS app. PWA gated by single-Google-account auth. | Trustworthy autonomy · Mobile-first supervision · Frictionless 1-tap publish · Daily readable digest |
-| **DevLille 2026 audience (evaluator, non-user)** | ~200–400 devs, tech leads, GenAI practitioners attending the June 2026 talk. Not system users, but the project must be **legible and defensible** as an architectural exemplar. | Clean repo (`CLAUDE.md`, `ROADMAP.md`, `specs/`, git history) · Clear cloud-native architecture · Credible spec-driven narrative |
+
+*(The former "DevLille 2026 audience" persona is retired now that the talk has passed — the repo no longer needs to be legible to a conference audience as a primary design constraint, though the spec-coding artefacts remain as a byproduct of how the project is built.)*
 
 ## 2. User Stories
 
@@ -359,27 +357,33 @@ allienna.github.io/               # SEPARATE existing repo, structure untouched
 7. PWA Supervision + Manual trigger + Push notif working on iPhone.
 8. Cloud Scheduler enabled — first cron run at 06:00 — **production live (M7)**.
 
-### Phase 4 — Hardening & demo prep (M8–M11, 2026-05-27 → 2026-06-12)
-9. M8: 7 consecutive successful days.
-10. M9: Reserved live-demo feature track stub created in `specs/`.
-11. M10 (J-2): backup demo video recorded; ≥18/21 runs OK on rolling window.
-12. M11: DevLille talk.
+### Phase 4 — Hardening & demo prep (M8–M11, 2026-05-27 → 2026-06-12) — historical, completed
+9. M8: burn-in attempted pre-talk (bar not fully met — see `burn-in-log.md` analysis; root causes found and fixed post-talk).
+10. M9: Reserved live-demo feature track stub created in `specs/` (F-014 — retired, not activated; see §11).
+11. M10 (J-2): backup demo video recorded; used in place of a live demo.
+12. M11: DevLille talk delivered (2026-06-11), without this app live.
+
+### Phase 5 — Ongoing operation (post-talk, no fixed deadline)
+13. Root-cause and fix reliability issues surfaced by burn-in (Gmail window/mailbox bugs, copyright-validator false positives, scraper yield) — in progress, tracked in `specs/013-hardening-burn-in/`.
+14. Reach the ≥60-consecutive-day autonomy goal (§1 Ongoing goals).
+15. Decommission v1 (n8n) once v2 reliability is proven.
+16. Ship ≥1 extension (NotebookLM Minion, source-cards Minion) as extensibility proof.
 
 ## 10. Risks & Mitigations
 
 | # | Risk | Impact | Likelihood | Mitigation |
 |---|------|--------|------------|------------|
-| R0 | Calendar pressure — 12 days incl. potential 4-day Ascension break | MVP slips past 2026-05-20 → ≥3-week prod window shortens | **High** | Decide Ascension this week; if leaving, prod target 2026-05-27 (still ≥2 weeks). MVP split into 2 atomic features (pipeline / PWA) to ship one without the other. |
+| R0 | ~~Calendar pressure — 12 days incl. potential 4-day Ascension break~~ | ~~MVP slips past 2026-05-20~~ | **Moot (talk passed)** | Resolved by the talk happening on schedule (2026-06-11) without this app in the live demo. No longer tracked. |
 | R1 | Claude Code Max 5× via OAuth in headless container — undocumented | Pipeline can't run → MVP hard-fails | **High** | Anthropic API key fallback in Secret Manager (cost ≤30€/mo). Validated by M2 spike (2026-05-10). |
 | R2 | Imagen 4 Fast moderation false positives on owl-mascot prompts | `success_with_warnings` runs accumulate | Med | Agentic-retry-with-softer-prompt → placeholder fallback. Curated prompt template in `/generate`. |
 | R3 | Gmail OAuth refresh token revocation | Hard pipeline failure until re-auth | Low-Med | Re-auth runbook documented; PWA banner on auth-expired Firestore state. |
 | R4 | GitHub push race conditions on `allienna.github.io` | Conflict, retry, possible content loss | Low | Shallow-clone + commit-with-rebase on conflict. Document "no manual push to `veilleur/` between 06:00–06:15". |
-| R5 | DevLille live-demo failure on stage (network, region outage, OAuth glitch) | Talk credibility damage | Low | Pre-recorded backup video. Demo designed to degrade gracefully — artefacts (`specs/`, git history, Firestore console, already-done morning article) tell the story without any live action. iPhone in airplane mode for non-demo apps. |
+| R5 | ~~DevLille live-demo failure on stage~~ | ~~Talk credibility damage~~ | **Moot (talk passed)** | Materialized as expected risk, mitigated as planned: the pre-recorded backup video was used instead of a live demo. No longer tracked. |
 | R6 | `claude-feature-flow` workflow gaps discovered mid-build | Project ships; talk thesis weakens | Low | Talk defends spec coding as method, not the tool. Gaps become future content, not thesis breakdown. |
 | R7 | LLM cost drift if `/generate` triggers verbose Claude reasoning | Hits 30€/mo cap → kill-switch fires | Med | Token caps (500k in / 30k out). Prompt cache where possible. Budget alerts at 80%. |
 | R8 | iOS Web Push reliability (VAPID + iOS 16.4+ + home-screen install) | Daily ritual broken | Med | Document home-screen install as onboarding step. Fallback: PWA polls Firestore on open. |
 | R9 | First-time integration of Cloud Run Job + Firestore + Vertex AI + Gmail OAuth + Imagen + GitHub — complex IAM/auth chain | Hours-to-days blocked on obscure auth point | Med | M2 spike covers the full chain in a "Hello Veilleur" container by 2026-05-10. |
-| R10 | DESIGN.md timebox slippage (perfectionism on design system) | Calendar slip | Low-Med | Hard 4h timebox for v1. Iteration accepted during `/specify` of UI features. No blocking on "the right blue". |
+| R10 | ~~DESIGN.md timebox slippage (perfectionism on design system)~~ | ~~Calendar slip~~ | **Moot (talk passed)** | Never materialized; DESIGN.md shipped in-timebox pre-talk. No longer tracked. |
 | R11 | iOS Safari PWA quirks (service worker, install UX, push) on top of R8 | Degraded UX even when push works | Med | Test on real iPhone as soon as Firebase Hosting is up. Never simulate iOS in Chrome DevTools. |
 
 ## 11. Out of Scope
@@ -395,8 +399,9 @@ allienna.github.io/               # SEPARATE existing repo, structure untouched
 - Draft / review workflow (Minion publishes or fails).
 - Notion sync (v1 used Notion; v2 does not).
 - Browser extension for ad-hoc URL ingestion.
+- **F-014 live-demo reserved track** — retired now that the talk has passed; the stub is not being activated as a live-demo surface. The directory may be repurposed or removed in `/roadmap`.
 
-**Out of MVP, candidates for post-talk roadmap:**
+**Candidates for future work (no longer gated by a "post-talk" label — we're past it):**
 - Search / full-text over archive (Vertex AI Vector Search or Algolia).
 - Theme filtering UI / `/tags/[theme]` pages.
 - Cross-newsletter trends detection.
