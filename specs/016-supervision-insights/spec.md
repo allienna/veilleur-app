@@ -2,7 +2,7 @@
 
 **Track ID**: 016-supervision-insights
 **Roadmap ref**: F-016
-**Status**: Draft
+**Status**: Approved
 **Created**: 2026-08-04
 **Branch**: feat/016-supervision-insights
 **PRD sections**: FR-D1 (live supervision), FR-D2 (run history)
