@@ -105,8 +105,9 @@ See **Analysis** below the table before doing anything else with this log.
 **Consecutive successes:** 1 / 7 (post-fix: 07-31 success, 08-01 failure resets it, 08-02 failure,
 08-03 success — counter restarts at 1) · **Window (post-fix days only):** 2 successes / 3 days
 (07-31, 08-01, 08-02, 08-03 = 4 days, 2 OK). The 2 post-fix failures are both `insufficient_sources`
-(F-015 local-extraction yield, root cause #2 — see Analysis) — the remaining blocker to consecutive
-runs, not the 3 causes already fixed. Pre-fix 61-day baseline (3-4 successes / 61 days) is historical
+and both fall on a **weekend (Sat 08-01, Sun 08-02)** — low newsletter volume on weekends is a
+plausible contributing factor, not necessarily F-015 yield regressing further (see Analysis's
+weekend-correlation note). Pre-fix 61-day baseline (3-4 successes / 61 days) is historical
 context only, not part of this rolling tally.
 
 ## Post-fix note (2026-07-31) — 3 root causes found and fixed in-track
@@ -161,6 +162,14 @@ apart, never back-to-back. At this success rate, waiting longer will not clear �
   actually resolved** (contrary to the "Pass with notes" review's optimistic framing of AC-6 as
   merely "deferred to burn-in") — it's the single most common cause of failure once sources exist at
   all.
+  - **Weekend correlation (operator hint, 2026-08-04)**: of these 11 post-06-04 dates, 2 fall on a
+    weekend (06-13 Sat, no others) — roughly the population base rate, so the 61-day history does
+    *not* show a strong weekend skew. However, the two post-fix (07-31+) `insufficient_sources` days —
+    **08-01 (Sat) and 08-02 (Sun)** — are both weekend, and low newsletter volume on weekends is a
+    plausible confound: fewer sources land in the Gmail window regardless of extraction yield. Not
+    proven at this sample size (n=2); worth tracking whether future weekend runs fail more often than
+    weekday runs before attributing more fixes to F-015 itself. If the pattern holds, the fix may be
+    a lower `MIN_SOURCES_OK`/`MIN_SOURCES_FRACTION` on weekends rather than another extraction change.
 - **`failure: generate ... missing_attribution`** — 3 days (06-16, 07-12, 07-24). The copyright
   validator rejects the generated article on both retries. Worth checking whether the retry prompt
   correction is actually effective, or if this validator is miscalibrated/too strict for the current
